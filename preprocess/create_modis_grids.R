@@ -53,7 +53,7 @@ for (product in names(products)) {
 
   # Create a RasterBrick the size of France aligned to the tiles in EPSG:2154
   grid <-
-    do.call(merge, rasters) %>%     # mosaic the rasters together
+    do.call(merge, rasters) %>%       # mosaic the rasters together
     projectExtent(., france) %>%      # project to EPSG:2154 (we don't need the data so just project the extent)
     crop(., france, snap = "out") %>% # crop to France, snapping outwards to include cells that partially overlap
     brick(., nl = 3)                  # create a RasterBrick with 3 layers
