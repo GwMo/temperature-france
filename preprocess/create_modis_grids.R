@@ -10,15 +10,11 @@ library("gdalUtils") # extends rgdal and raster to manipulate HDF4 files
                      # (GDAL must have been built with HDF4 support)
 
 # Set the data dir and working dir
-data_dir <-
-  file.path("~", "data") %>%
-  path.expand
+data_dir <- file.path("~", "data") %>% path.expand
 setwd(file.path(data_dir, 'r'))
 
 # Load a shapefile of metropolitan France in the EPSG:2154 projection
-france <-
-  file.path(data_dir, "ign", "france_epsg-2154.shp") %>%
-  shapefile
+france <- file.path(data_dir, "ign", "france_epsg-2154.shp") %>% shapefile
 
 # Set paths to MODIS Aqua and Terra LST and NDVI products
 products <- list(
@@ -38,17 +34,15 @@ for (product in names(products)) {
     .[1] %>%
     list.files(., full.names = TRUE, pattern = "\\.hdf$")
 
-  # Load the first dataset in the tiles
+  # Load a LST or NDVI dataset for each tile
   rasters <-
     lapply(tiles, function(tile) {
-      if (grepl("_ndvi$", product)) {
-        sds <- "1 km monthly NDVI$"
-      } else {
+      if (grepl("_lst$", product)) {
         sds <- "LST_Night_1km$"
+      } else {
+        sds <- "1 km monthly NDVI$"
       }
-      get_subdatasets(tile) %>%
-      .[grepl(sds, .)] %>%
-      raster
+      get_subdatasets(tile) %>% .[grepl(sds, .)] %>% raster
     })
 
   # Create a RasterBrick the size of France aligned to the tiles in EPSG:2154
@@ -64,9 +58,7 @@ for (product in names(products)) {
   values(grid$y) <- yFromCell(grid, 1:ncell(grid))
 
   # Add a mask of France: cells with their center in France have a value of 1
-  grid$mask <-
-    setValues(grid$mask, 1) %>%
-    mask(., france)
+  grid$mask <- setValues(grid$mask, 1) %>% mask(., france)
 
   # Save the grid to GeoTIFF for reference
   paste(product, "grid.tif", sep = "_") %>% writeRaster(grid, .)

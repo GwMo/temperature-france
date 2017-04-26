@@ -1,18 +1,19 @@
 # Check for misalignment between the different MODIS product grids
+# If misalignment is small, use the Aqual LST grid as a standard reference grid
 
-library("magrittr")
-library("raster")
+library("magrittr") # %>% pipe-like operator
+library("raster")   # methods to manipulate gridded spatial data
 
+# Set working directory
 file.path("~", "data", "r") %>% path.expand %>% setwd
 
 # Load the MODIS Aqua and Terra LST and NDVI grid rasters
-products <-
-  c(
-    "aqua_lst",
-    "aqua_ndvi",
-    "terra_lst",
-    "terra_ndvi"
-  )
+products <- c(
+  "aqua_lst",
+  "aqua_ndvi",
+  "terra_lst",
+  "terra_ndvi"
+)
 
 grids <-
   sapply(products, function(p) {
@@ -21,12 +22,11 @@ grids <-
 
 # Return the max difference between the origin, resolution, and coordinates of two grids
 difference <- function(a, b) {
-  d <-
-    c(
-      max(origin(a) - origin(b)),
-      max(res(a) - res(b)),
-      max(coordinates(a) - coordinates(b))
-    )
+  d <- c(
+    max(origin(a) - origin(b)),
+    max(res(a) - res(b)),
+    max(coordinates(a) - coordinates(b))
+  )
   names(d) <- c("origin", "resolution", "coordinates")
   d
 }
@@ -64,5 +64,5 @@ if (max(diffs$coordinates) < 0.001) {
   print("Saving aqua lst grid as 'modis_grid.rds'")
   file.copy("modis_aqua_lst_grid.rds", "modis_grid.rds")
 } else {
-  print(paste("Grids are misaligned by up to", max(diffs$coordinates), "m"))
+  paste("Grids are misaligned by up to", max(diffs$coordinates), "m") %>% print
 }
