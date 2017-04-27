@@ -57,8 +57,12 @@ for (product in names(products)) {
     crop(., france, snap = "out") %>% # crop to France, snapping outwards to include cells that partially overlap
     brick(., nl = 3)                  # create a RasterBrick with 3 layers
 
-  # Add layer names and cell coordinates
+  # Add layer names
   names(grid) <- c("x", "y", "mask")
+
+  # Add cell coordinates
+  # Ignore any warning about not being able to read cell values because no file
+  # is associated with the RasterBrick
   values(grid$x) <- xFromCell(grid, 1:ncell(grid))
   values(grid$y) <- yFromCell(grid, 1:ncell(grid))
 
@@ -86,3 +90,5 @@ for (product in names(products)) {
   paste("  Saving to", filename) %>% print
   saveRDS(grid, filename)
 }
+
+print("Done. Ignore any warnings about not being able to read cell values because no file is associated with the RasterBrick.")
