@@ -6,6 +6,7 @@ library("rgeos")    # wrapper for GEOS to manipulate vector data
                     # (GEOS must be present)
 library("parallel") # parallel computation
 
+print("Generating buffers around the reference grid points")
 
 # Set working directory
 file.path("~", "data", "r") %>% path.expand %>% setwd
@@ -31,9 +32,13 @@ distances <- c(1, 3)
 mclapply(
   distances,
   function(dist) {
-    gBuffer(grid_epsg_3035, width = dist * 500, byid = TRUE, capStyle = "SQUARE") %>%
-    spTransform(., epsg_2154) %>%
-    saveRDS(., paste("modis_grid_square_", dist, "km.rds", sep = ""))
+    paste("Creating", dist, "km square buffer") %>% print
+    buf <-
+      gBuffer(grid_epsg_3035, width = dist * 500, byid = TRUE, capStyle = "SQUARE") %>%
+      spTransform(., epsg_2154)
+    filename <- paste("modis_grid_square_", dist, "km.rds", sep = "")
+    paste("Saving", filename) %>% print
+    saveRDS(buf, filename)
   },
   mc.cores = 2
 )
@@ -43,9 +48,13 @@ distances <- c(1, 3, 5, 10, 15)
 mclapply(
   distances,
   function(dist) {
-    gBuffer(grid_epsg_3035, width = dist * 500, byid = TRUE) %>%
-    spTransform(., epsg_2154) %>%
-    saveRDS(., paste("modis_grid_buffer_", dist, "km.rds", sep = ""))
+    paste("Creating", dist, "km buffer") %>% print
+    buf <-
+      gBuffer(grid_epsg_3035, width = dist * 500, byid = TRUE) %>%
+      spTransform(., epsg_2154)
+    filename <- paste("modis_grid_buffer_", dist, "km.rds", sep = "")
+    paste("Saving", filename) %>% print
+    saveRDS(buf, filename)
   },
   mc.cores = 4
 )
