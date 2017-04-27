@@ -27,7 +27,10 @@ products <- list(
 # For each product, create a reference grid with a point at the center of every
 # pixel that falls within metropolitan France
 for (product in names(products)) {
-  # Load the tiles for the first date of the product
+  paste("Creating ", product, " grid") %>% print
+
+  # Find the tiles for the first date of the product
+  print("  Finding tiles")
   tiles <-
     products[[product]] %>%
     list.dirs(., recursive = FALSE) %>%
@@ -35,6 +38,7 @@ for (product in names(products)) {
     list.files(., full.names = TRUE, pattern = "\\.hdf$")
 
   # Load a LST or NDVI dataset for each tile
+  print("  Loading tiles as rasters")
   rasters <-
     lapply(tiles, function(tile) {
       if (grepl("_lst$", product)) {
@@ -46,6 +50,7 @@ for (product in names(products)) {
     })
 
   # Create a RasterBrick the size of France aligned to the tiles in EPSG:2154
+  print("  Merging rasters")
   grid <-
     do.call(merge, rasters) %>%       # mosaic the rasters together
     projectExtent(., france) %>%      # project to EPSG:2154 (we don't need the data so just project the extent)
@@ -58,19 +63,26 @@ for (product in names(products)) {
   values(grid$y) <- yFromCell(grid, 1:ncell(grid))
 
   # Add a mask of France: cells with their center in France have a value of 1
+  print("  Masking France")
   grid$mask <- setValues(grid$mask, 1) %>% mask(., france)
 
   # Save the grid to GeoTIFF for reference
-  paste(product, "grid.tif", sep = "_") %>% writeRaster(grid, .)
+  filename <- paste(product, "grid.tif", sep = "_")
+  paste("  Saving to ", filename) %>% print
+  writeRaster(grid, filename)
 
   # Convert the grid to a spatial points dataframe
+  print("  Converting to sptial points dataframe")
   grid <- as.data.frame(grid)
   coordinates(grid) <- ~ x + y
   projection(grid) <- projection(france)
 
   # Delete all points that fall outside of France
+  print("  Removing points outside France")
   grid <- grid[!is.na(grid$mask), ]
 
   # Save the spatial points dataframe to an rds file
-  paste(product, "grid.rds", sep = "_") %>% saveRDS(grid, .)
+  filename <- paste(product, "grid.rds", sep = "_")
+  paste("  Saving to ", filename) %>% print
+  saveRDS(grid, filename)
 }
