@@ -7,6 +7,8 @@ library("raster")   # methods to manipulate gridded spatial data
 # Set working directory
 file.path("~", "data", "r") %>% path.expand %>% setwd
 
+print("Checking alignement of MODIS grids:")
+
 # Load the MODIS Aqua and Terra LST and NDVI grid rasters
 products <- c(
   "aqua_lst",
@@ -32,8 +34,6 @@ difference <- function(a, b) {
 }
 
 # Calculate misalignment between Aqua and Terra LST grids
-print("Difference in alignment between MODIS grids:")
-
 print("Aqua LST vs Terra LST")
 lst_vs_lst <- difference(grids$aqua_lst, grids$terra_lst)
 print(lst_vs_lst)
