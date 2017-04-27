@@ -12,8 +12,7 @@ print("Generating buffers around the reference grid points")
 file.path("~", "data", "r") %>% path.expand %>% setwd
 
 # Load the MODIS reference grid
-# grid <- readRDS("modis_grid.rds") TODO re-enable
-grid <- readRDS("modis_grid_small.rds")
+grid <- readRDS("modis_grid.rds")
 
 # Define EPSG:2154, the RGF93 / Lambert-93 projection
 # The official Lambert conformal conic projection for metropolitan France
