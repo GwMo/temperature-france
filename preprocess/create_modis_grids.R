@@ -75,15 +75,11 @@ for (product in names(products)) {
   paste("  Saving to", filename) %>% print
   writeRaster(grid, filename)
 
-  # Convert the grid to a spatial points dataframe
+  # Convert the grid cells in France to a spatial points dataframe
   print("  Converting to sptial points dataframe")
-  grid <- as.data.frame(grid)
+  grid <- grid[grid$mask == 1] %>% as.data.frame
   coordinates(grid) <- ~ x + y
   projection(grid) <- projection(france)
-
-  # Delete all points that fall outside of France
-  print("  Removing points outside France")
-  grid <- grid[!is.na(grid$mask), ]
 
   # Save the spatial points dataframe to an rds file
   filename <- paste(product, "grid.rds", sep = "_")
