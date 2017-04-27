@@ -16,7 +16,7 @@ grid <- readRDS("modis_grid_small.rds")
 
 # Define EPSG:2154, the RGF93 / Lambert-93 projection
 # The official Lambert conformal conic projection for metropolitan France
-epsg_2154 <- projection(grid)
+epsg_2154 <- proj4string(grid)
 
 # Define EPSG:3035, the ETRS89 / LAEA Europe projection
 # A Europe-wide Lambert azimuthal equal area projection for statistical mapping
