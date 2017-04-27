@@ -27,7 +27,7 @@ products <- list(
 # For each product, create a reference grid with a point at the center of every
 # pixel that falls within metropolitan France
 for (product in names(products)) {
-  paste("Creating ", product, " grid") %>% print
+  paste("Creating grid from", product) %>% print
 
   # Find the tiles for the first date of the product
   print("  Finding tiles")
@@ -38,7 +38,7 @@ for (product in names(products)) {
     list.files(., full.names = TRUE, pattern = "\\.hdf$")
 
   # Load a LST or NDVI dataset for each tile
-  print("  Loading tiles as rasters")
+  print("  Loading tiles")
   rasters <-
     lapply(tiles, function(tile) {
       if (grepl("_lst$", product)) {
@@ -50,7 +50,7 @@ for (product in names(products)) {
     })
 
   # Create a RasterBrick the size of France aligned to the tiles in EPSG:2154
-  print("  Merging rasters")
+  print("  Merging and projecting")
   grid <-
     do.call(merge, rasters) %>%       # mosaic the rasters together
     projectExtent(., france) %>%      # project to EPSG:2154 (we don't need the data so just project the extent)
@@ -68,7 +68,7 @@ for (product in names(products)) {
 
   # Save the grid to GeoTIFF for reference
   filename <- paste(product, "grid.tif", sep = "_")
-  paste("  Saving to ", filename) %>% print
+  paste("  Saving to", filename) %>% print
   writeRaster(grid, filename)
 
   # Convert the grid to a spatial points dataframe
@@ -83,6 +83,6 @@ for (product in names(products)) {
 
   # Save the spatial points dataframe to an rds file
   filename <- paste(product, "grid.rds", sep = "_")
-  paste("  Saving to ", filename) %>% print
+  paste("  Saving to", filename) %>% print
   saveRDS(grid, filename)
 }
