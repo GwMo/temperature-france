@@ -61,8 +61,8 @@ diffs <-
 # If the grids are aligned to within 1 mm, use the aqua lst grid as the reference
 if (max(diffs$coordinates) < 0.001) {
   print("Grids are aligned to within 1 mm")
-  print("Saving aqua lst grid as 'modis_grid.rds'")
   file.copy("modis_aqua_lst_grid.rds", "modis_grid.rds")
+  print("Saved aqua lst grid as 'modis_grid.rds'")
 } else {
   paste("Grids are misaligned by up to", max(diffs$coordinates), "m") %>% print
 }
