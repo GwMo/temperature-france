@@ -49,14 +49,16 @@ mos <-
   brick(., nl = 5)            # create a RasterBrick with 5 layers
 
 # Add layer names
-names(mos) <- c("x", "y", "mask")
+names(mos) <- c("x", "y", "row", "col", "mask")
 
-# Add cell coordinates
+# Add cell coordinates and row and column numbers
 # Ignore any warnings about not being able to read cell values because no file
 message("Getting cell latitude and longitude")
 message("  Ignore any warnings about not being able to read values because no file")
 values(mos$x) <- xFromCell(mos, 1:ncell(mos))
 values(mos$y) <- yFromCell(mos, 1:ncell(mos))
+values(mos$row) <- rowFromCell(mos, 1:ncell(mos))
+values(mos$col) <- colFromCell(mos, 1:ncell(mos))
 
 # Add a mask of France: cells with their center in France have a value of 1
 message("Masking France")
@@ -68,8 +70,8 @@ paste("Saving mosaic to", filename) %>% message
 writeRaster(mos, filename)
 
 # Convert the mosaic cells in France to a spatial points dataframe
-pts <- mos[mos$mask == 1] %>% .[ , c("x", "y")] %>% as.data.frame
 message("Converting to spatial points dataframe")
+pts <- mos[mos$mask == 1] %>% .[, c("x", "y", "row", "col")] %>% as.data.frame
 coordinates(pts) <- ~ x + y
 projection(pts) <- projection(mos)
 
