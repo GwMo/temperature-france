@@ -12,6 +12,7 @@ library("gdalUtils") # extends rgdal and raster to manipulate HDF4 files
 
 print("Creating a reference grid from MODIS Aqua LST data")
 print("USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
+print("")
 
 # Set directories
 data_dir <- file.path("~", "data") %>% path.expand
@@ -27,7 +28,7 @@ tiles <-
   list.files(., full.names = TRUE, pattern = "\\.hdf$")
 
 # Load the night LST dataset for each tile and clear the values
-print("  Loading MODIS Aqua LST tiles")
+print("Loading MODIS Aqua LST tiles")
 rasters <- sapply(tiles, function(tile) {
   get_subdatasets(tile) %>%         # list the scientific datasets for the tile
   .[grepl("LST_Night_1km$", .)] %>% # select the night LST dataset
@@ -43,7 +44,7 @@ france_2154 <- file.path(data_dir, "ign", "france_epsg-2154.shp") %>% shapefile
 france_sinu <- rasters[[1]] %>% projection %>% spTransform(france_2154, .)
 
 # Mosaic the tiles and clip to France
-print("  Mosaicing and clipping")
+print("Mosaicing and clipping")
 mos <-
   do.call(merge, rasters) %>%            # mosaic the rasters together - use merge because there is no overlap between the tiles
   crop(., france_sinu, snap = "out") %>% # crop to France, snapping outwards to include cells that partially overlap
@@ -54,22 +55,22 @@ names(mos) <- c("x", "y", "mask")
 
 # Add cell coordinates
 # Ignore any warnings about not being able to read cell values because no file
-print("  Getting cell latitude and longitude")
-print("    Ignore any warnings about not being able to read cell values because no file")
+print("Getting cell latitude and longitude")
+print("  Ignore any warnings about not being able to read values because no file")
 values(mos$x) <- xFromCell(mos, 1:ncell(mos))
 values(mos$y) <- yFromCell(mos, 1:ncell(mos))
 
 # Add a mask of France: cells with their center in France have a value of 1
-print("  Masking France")
+print("Masking France")
 mos$mask <- setValues(mos$mask, 1) %>% mask(., france_sinu)
 
 # Save the mosaic as a GeoTIFF for reference
 filename <- "modis_grid_sinusoidal.tif"
-paste("  Saving mosaic to", filename) %>% print
+paste("Saving mosaic to", filename) %>% print
 writeRaster(mos, filename)
 
 # Convert the mosaic cells in France to a spatial points dataframe
-print("  Converting to spatial points dataframe")
+print("Converting to spatial points dataframe")
 pts <- mos[mos$mask == 1] %>% .[ , c("x", "y")] %>% as.data.frame
 coordinates(pts) <- ~ x + y
 projection(pts) <- projection(mos)
@@ -79,5 +80,5 @@ pts <- spTransform(pts, projection(france_sinu))
 
 # Save the spatial points dataframe to an rds file
 filename <- "modis_grid.rds"
-paste("  Saving points to", filename) %>% print
+paste("Saving points to", filename) %>% print
 saveRDS(pts, filename)
