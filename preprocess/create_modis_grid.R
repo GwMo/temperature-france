@@ -35,9 +35,7 @@ rasters <- sapply(tiles, function(tile) {
   raster %>%                        # load the dataset as a raster
   raster                            # clear the values to speed up mosaicing
 })
-
-# Clear the names of the rasters list to avoid an error when mosaicing
-names(rasters) <- NULL
+names(rasters) <- NULL # clear the list names to avoid an error when mosaicing
 
 # Load a shapefile of France in EPSG:2154 and reproject it to match the tiles
 france_2154 <- file.path(data_dir, "ign", "france_epsg-2154.shp") %>% shapefile
@@ -46,9 +44,9 @@ france_sinu <- rasters[[1]] %>% projection %>% spTransform(france_2154, .)
 # Mosaic the tiles and clip to France
 message("Mosaicing and clipping")
 mos <-
-  do.call(merge, rasters) %>%            # mosaic the rasters together - use merge because there is no overlap between the tiles
-  crop(., france_sinu, snap = "out") %>% # crop to France, snapping outwards to include cells that partially overlap
-  brick(., nl = 3)                       # create a RasterBrick with 3 layers
+  do.call(merge, rasters) %>% # mosaic the rasters - use merge because there is no overlap between the tiles
+  crop(., france_sinu) %>%    # crop to France
+  brick(., nl = 5)            # create a RasterBrick with 5 layers
 
 # Add layer names
 names(mos) <- c("x", "y", "mask")
