@@ -17,7 +17,7 @@ message()
 # Set directories
 data_dir <- file.path("~", "data") %>% path.expand
 grid_dir <- file.path("~", "temperature-france", "grids") %>% path.expand
-dir.create(grid_dir, recursive = TRUE)
+dir.create(grid_dir, recursive = TRUE, showWarnings = FALSE)
 setwd(grid_dir)
 
 # Find the tiles for the first date with MODIS Aqua LST data

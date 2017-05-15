@@ -11,7 +11,7 @@ print("Generating buffers around the reference grid points")
 # Set directories
 base_dir <- file.path("~", "temperature-france") %>% path.expand
 buffer_dir <- file.path(base_dir, "buffers")
-dir.create(buffer_dir)
+dir.create(buffer_dir, showWarnings = FALSE)
 setwd(buffer_dir)
 
 # Load the MODIS reference grid
