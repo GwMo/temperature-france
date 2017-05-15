@@ -76,7 +76,7 @@ coordinates(pts) <- ~ x + y
 projection(pts) <- projection(mos)
 
 # Project the spatial points dataframe to EPSG:2154
-pts <- spTransform(pts, projection(france_sinu))
+pts <- spTransform(pts, projection(france_2154))
 
 # Save the spatial points dataframe to an rds file
 filename <- "modis_grid.rds"
