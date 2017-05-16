@@ -6,7 +6,12 @@ library("rgeos")    # wrapper for GEOS to manipulate vector data
                     # (GEOS must be present)
 library("parallel") # parallel computation
 
-print("Generating buffers around the reference grid points")
+# Function to display messages with a timestamp
+display <- function(msg) {
+  paste(Sys.time(), msg, sep = ": ") %>% message
+}
+
+display("Generating buffers around the reference grid points")
 
 # Set directories
 base_dir <- file.path("~", "temperature-france") %>% path.expand
@@ -25,38 +30,44 @@ epsg_2154 <- proj4string(grid)
 # A Europe-wide Lambert azimuthal equal area projection for statistical mapping
 epsg_3035 <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
 
-# Project the grid to EPSG:3035
+# Project the grid to EPSG:3035 and clear memory
 # Creating the buffers in EPSG:3035 ensures they have the same area
 grid_3035 <- spTransform(grid, epsg_3035)
+rm(grid)
 
-# Generate and save 1 km and 3 km square buffers around each grid point
-distances <- c(1, 3)
-mclapply(
-  distances,
-  function(dist) {
-    paste("Creating", dist, "km square buffer") %>% print
-    buf <-
-      gBuffer(grid_3035, width = dist * 500, byid = TRUE, capStyle = "SQUARE") %>%
-      spTransform(., epsg_2154)
-    filename <- paste("modis_square_", dist, "km.rds", sep = "")
-    paste("Saving", filename) %>% print
-    saveRDS(buf, filename)
-  },
-  mc.cores = 2
-)
+# Define a function to buffer in parallel using 24 cores
+ncores <- 24
+buffer_parallel <- function(pts, width, capStyle = "ROUND") {
+  # Assign the grid points to ncores groups
+  groups <- ceiling(1:nrow(pts) / (nrow(pts) / ncores))
+
+  # Buffer the points in each group and reproject to EPSG:2154
+  buffers <- mclapply(1:ncores, function(group) {
+    pts[groups == group, ] %>%
+    gBuffer(., width = width * 500, capStyle = capStyle, byid = TRUE) %>%
+    spTransform(., epsg_2154)
+  }, mc.cores = ncores)
+
+  # Collect the results into a single SpatialPolygonsDataFrame
+  do.call(rbind, buffers)
+}
+
+# Generate and 1 km and 3 km square buffers around each grid point
+for (distance in c(1, 3)) {
+  paste("Creating", distance, "km square buffer") %>% display
+  buffers <- buffer_parallel(grid_3035, distance, capStyle = "SQUARE")
+  filename <- paste("modis_square_", distance, "km.rds", sep = "")
+  paste("  Saving", filename) %>% display
+  saveRDS(buffers, filename)
+  rm(buffers)
+}
 
 # Generate and save 1 km to 15 km circular buffers around each grid point
-distances <- c(1, 3, 5, 10, 15)
-mclapply(
-  distances,
-  function(dist) {
-    paste("Creating", dist, "km buffer") %>% print
-    buf <-
-      gBuffer(grid_3035, width = dist * 500, byid = TRUE) %>%
-      spTransform(., epsg_2154)
-    filename <- paste("modis_round_", dist, "km.rds", sep = "")
-    paste("Saving", filename) %>% print
-    saveRDS(buf, filename)
-  },
-  mc.cores = 5
-)
+for (distance in c(1, 3, 5, 10, 15)) {
+  paste("Creating", distance, "km buffer") %>% display
+  buffers <- buffer_parallel(grid_3035, distance)
+  filename <- paste("modis_round_", distance, "km.rds", sep = "")
+  paste("  Saving to", filename) %>% display
+  saveRDS(buffers, filename)
+  rm(buffers)
+}
