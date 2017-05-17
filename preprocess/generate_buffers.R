@@ -41,15 +41,18 @@ buffer_parallel <- function(pts, width, capStyle = "ROUND") {
   # Assign the grid points to ncores groups
   groups <- ceiling(1:nrow(pts) / (nrow(pts) / ncores))
 
-  # Buffer the points in each group and reproject to EPSG:2154
+  # Buffer the points in each group, reproject to EPSG:2154, and collect the
+  # results into a single SpatialPolygonsDataFrame
   buffers <- mclapply(1:ncores, function(group) {
     pts[groups == group, ] %>%
     gBuffer(., width = width * 500, capStyle = capStyle, byid = TRUE) %>%
     spTransform(., epsg_2154)
-  }, mc.cores = ncores)
+  }, mc.cores = ncores) %>%
+  do.call(rbind, .)
 
-  # Collect the results into a single SpatialPolygonsDataFrame
-  do.call(rbind, buffers)
+  # Set the plot order and return the resulting buffers
+  buffers@plotOrder <- 1:nrow(buffers)
+  buffers
 }
 
 # Generate and 1 km and 3 km square buffers around each grid point
