@@ -7,7 +7,7 @@ parallel_extract <- function(veloxed_data, buffers, fun, ncores) {
   #   Project the buffers to match the dataset
   #   Extract and summarize the values for each buffer
   # Unlist the results and return the resulting vector
-  mclapply(1:max(squares$group), function(i) {
+  mclapply(1:max(buffers$group), function(i) {
     projected <- spTransform(buffers[buffers$group == i, ], veloxed_data$crs)
     veloxed_data$extract(projected, fun = fun)
   }, mc.cores = ncores) %>% unlist
