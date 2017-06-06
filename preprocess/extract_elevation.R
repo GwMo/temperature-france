@@ -130,3 +130,5 @@ paste("  Saving to", path) %>% report
 saveRDS(grid@data, path)
 rm(ign_dir, ign_dem, vx)
 grid <- grid[ , grid_col_names]
+
+report("Done")
