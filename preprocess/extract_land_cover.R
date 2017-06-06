@@ -18,13 +18,11 @@ file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
 # Load the reference grid and save its original column names
 report("Loading MODIS reference grid")
-# grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
-grid <- file.path(model_dir, "test", "grids", "small_grid.rds") %>% readRDS
+grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
 
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
-# squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
-squares <- file.path(model_dir, "test", "buffers", "small_square_1km.rds") %>% readRDS
+squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
 
 # Use 16 cores for parallel extraction
 ncores <- 16
