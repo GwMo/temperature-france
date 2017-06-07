@@ -1,10 +1,10 @@
 # Generate buffers around the points of the reference grid
 
-library("magrittr") # %>% pipe-like operator
-library("sp")       # classes and methods for spatial data
-library("rgeos")    # wrapper for GEOS to manipulate vector data
+library(magrittr) # %>% pipe-like operator
+library(sp)       # classes and methods for spatial data
+library(rgeos)    # wrapper for GEOS to manipulate vector data
                     # (GEOS must be present)
-library("parallel") # parallel computation
+library(parallel) # parallel computation
 
 # Function to display messages with a timestamp
 display <- function(msg) {

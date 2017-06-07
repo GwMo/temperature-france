@@ -1,10 +1,10 @@
 # Extract elevation data from various datasets using the reference grid
 
-library("magrittr") # %>% pipe-like operator
-library("parallel") # parallel computation
-library("sp")       # classes and methods for spatial data
-library("raster")   # methods to manipulate gridded spatial data
-library("velox")    # c++ accelerated raster manipulation
+library(magrittr) # %>% pipe-like operator
+library(parallel) # parallel computation
+library(sp)       # classes and methods for spatial data
+library(raster)   # methods to manipulate gridded spatial data
+library(velox)    # c++ accelerated raster manipulation
 
 data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand

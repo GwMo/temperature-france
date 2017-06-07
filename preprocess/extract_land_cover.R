@@ -1,10 +1,10 @@
 # Extract land cover data using the reference grid
 
-library("magrittr") # %>% pipe-like operator
-library("parallel") # parallel computation
-library("sp")       # classes and methods for spatial data
-library("raster")   # methods to manipulate gridded spatial data
-library("velox")    # c++ accelerated raster manipulation
+library(magrittr) # %>% pipe-like operator
+library(parallel) # parallel computation
+library(sp)       # classes and methods for spatial data
+library(raster)   # methods to manipulate gridded spatial data
+library(velox)    # c++ accelerated raster manipulation
 
 data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
@@ -103,3 +103,5 @@ for (year in c(2000, 2006, 2012)) {
   saveRDS(result, path)
   rm(clc_data, vx, result)
 }
+
+report("Done")

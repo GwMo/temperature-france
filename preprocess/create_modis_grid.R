@@ -2,12 +2,12 @@
 # to the MODIS Aqua LST data. Assumes the check_modis_alignment script reported
 # no significant misalignment between modis products.
 
-library("magrittr")  # %>% pipe-like operator
-library("sp")        # classes and methods for spatial data
-library("rgdal")     # wrapper for GDAL and proj.4 to manipulate spatial data
+library(magrittr)  # %>% pipe-like operator
+library(sp)        # classes and methods for spatial data
+library(rgdal)     # wrapper for GDAL and proj.4 to manipulate spatial data
                      # (GDAL and proj.4 must be present)
-library("raster")    # methods to manipulate gridded spatial data
-library("gdalUtils") # extends rgdal and raster to manipulate HDF4 files
+library(raster)    # methods to manipulate gridded spatial data
+library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
                      # (GDAL must have been built with HDF4 support)
 
 message("Creating a reference grid from MODIS Aqua LST data")
