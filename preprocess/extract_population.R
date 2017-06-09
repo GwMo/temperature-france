@@ -56,7 +56,7 @@ insee_pop <- SpatialPixelsDataFrame(insee_pop, insee_pop@data) %>% raster
 
 # Disaggregate the data from 200 m to 50 m
 report("  Disaggregating to 50 m")
-insee_pop <- disaggregate(insee_pop, 4)
+insee_pop <- disaggregate(insee_pop, 4) / 16
 
 # Convert to a velox object
 report("  Loading with velox")
