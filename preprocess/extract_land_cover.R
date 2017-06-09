@@ -39,38 +39,21 @@ clc_dict <- file.path(clc_dir, "clc_legend.csv") %>% read.csv
 
 # Define groups of land cover classes
 clc_groups <- list(
-  c(111),                     # Continuous urban
-  c(112),                     # Discontinuous urban
-  c(121, 122, 123, 124),      # Industrial, commercial, transportation
-  c(131, 132, 133),           # Mines, dumps, construction sites
-  c(141, 142),                # Green urban areas, sports / leisure facilities
-  c(211, 212, 213),           # Arable land
-  c(221, 222, 223),           # Vineyards, plantations, olive groves
-  c(241, 242, 243),           # Heterogeneous agriculture
-  c(311, 312, 313),           # Forest
-  c(231, 321, 322),           # Pastures, grasslands, moors
-  c(323, 324),                # Brush, shrublands
-  c(331, 332, 333, 334),      # Sand, rock, sparse vegetation, burnt areas
-  c(335),                     # Glaciers, snow
-  c(411, 412, 421, 422, 423), # Wetlands
-  c(511, 512, 521, 522, 523)  # Water
-)
-names(clc_groups) <- c(
-  "urban_continuous",
-  "urban_discontinuous",
-  "commercial_industrial",
-  "mines_dumps",
-  "urban_green_leisure",
-  "arable_land",
-  "permanent_crops",
-  "mixed_agricultural",
-  "forest",
-  "grassland_pasture",
-  "shurbland",
-  "bare",
-  "snow",
-  "wetland",
-  "water"
+  "urban_continuous"      = c(111),                     # Continuous urban
+  "urban_discontinuous"   = c(112),                     # Discontinuous urban
+  "commercial_industrial" = c(121, 122, 123, 124),      # Industrial, commercial, transportation
+  "mines_dumps"           = c(131, 132, 133),           # Mines, dumps, construction sites
+  "urban_green_leisure"   = c(141, 142),                # Green urban areas, sports / leisure facilities
+  "arable_land"           = c(211, 212, 213),           # Arable land
+  "permanent_crops"       = c(221, 222, 223),           # Vineyards, plantations, olive groves
+  "mixed_agricultural"    = c(241, 242, 243),           # Heterogeneous agriculture
+  "forest"                = c(311, 312, 313),           # Forest
+  "grassland_pasture"     = c(231, 321, 322),           # Pastures, grasslands, moors
+  "shurbland"             = c(323, 324),                # Brush, shrublands
+  "bare"                  = c(331, 332, 333, 334),      # Sand, rock, sparse vegetation, burnt areas
+  "snow"                  = c(335),                     # Glaciers, snow
+  "wetland"               = c(411, 412, 421, 422, 423), # Wetlands
+  "water"                 = c(511, 512, 521, 522, 523)  # Water
 )
 
 # Extract the area for each group of land cover classes in 2000, 2006, and 2012
