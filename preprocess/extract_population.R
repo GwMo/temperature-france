@@ -4,6 +4,8 @@ library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation
 library(sp)       # classes and methods for spatial data
 library(foreign)  # support for dbf files
+library(raster)   # methods to manipulate gridded spatial data
+library(velox)    # c++ accelerated raster manipulation
 
 data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
@@ -13,7 +15,7 @@ setwd(output_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "parallel_over.R") %>% source
+file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
 # Load the reference grid and save its original column names
 report("Loading MODIS reference grid")
@@ -40,20 +42,30 @@ insee_pop <- file.path(insee_dir, "car_m.dbf") %>% read.dbf(., as.is = TRUE)
 # Extract the tile center coordinates from the tile ids
 # The tile ids include the LAEA coordinates of the tile's bottom left corner so
 # adding 100 gives the coordinates of the tile center
-report("  Transforming to spatial points dataframe")
+report("  Extracting tile coordinates")
 insee_pop$x <- substr(insee_pop$idINSPIRE, 24, 30) %>% as.numeric %>% + 100
 insee_pop$y <- substr(insee_pop$idINSPIRE, 16, 22) %>% as.numeric %>% + 100
 
-# Drop unneeded columns and convert to a spatial points data frame
+# Drop unneeded columns and load as a raster
+report("  Loading data as a raster")
 insee_pop <- insee_pop[ , c("x", "y", "ind_c")]
 names(insee_pop)[3] <- "population"
 coordinates(insee_pop) <- ~ x + y
 proj4string(insee_pop) <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+insee_pop <- SpatialPixelsDataFrame(insee_pop, insee_pop@data) %>% raster
 
-# Calculate the total population of each 1 km square buffer
-report("  Calculating population in 1 km square buffers")
-grid$populations <- parallel_over(insee_pop, squares, sum, ncores)
-grid$populations[is.na(grid$populations)] <- 0 # replace NA with 0
+# Disaggregate the data from 200 m to 50 m
+report("  Disaggregating to 50 m")
+insee_pop <- disaggregate(insee_pop, 4)
+
+# Convert to a velox object
+report("  Loading with velox")
+vx <- velox(insee_pop)
+
+# Extract the total population of each 1 km square buffer
+report("  Extracting population")
+sum_pop <- function(x) { sum(x, na.rm = TRUE) }
+grid$populations <- parallel_extract(insee_pop, squares, sum_pop, ncores)
 
 # Save the result
 path <- file.path(output_dir, "modis_1km_population.rds")
