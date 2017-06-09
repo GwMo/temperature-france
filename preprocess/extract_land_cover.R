@@ -82,6 +82,10 @@ for (year in c(2000, 2006, 2012)) {
   filename <- paste("clc", year, "france.tif", sep = "_")
   clc_data <- file.path(clc_dir, filename) %>% raster
 
+  # Disaggregate the data from 100 m to 50 m
+  report("  Disaggregating to 50 m")
+  clc_data <- disaggregate(clc_data, 2)
+
   # Create a velox object from the raster data
   report("  Loading data with velox")
   vx <- velox(clc_data)
