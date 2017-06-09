@@ -60,7 +60,7 @@ insee_pop <- disaggregate(insee_pop, 4) / 16
 
 # Convert to a velox object
 report("  Loading with velox")
-vx <- velox(insee_pop)
+insee_pop <- velox(insee_pop)
 
 # Extract the total population of each 1 km square buffer
 report("  Extracting population")
