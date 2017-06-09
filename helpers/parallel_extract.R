@@ -9,6 +9,6 @@ parallel_extract <- function(veloxed_data, buffers, fun, ncores) {
   # Unlist the results and return the resulting vector
   mclapply(1:max(groups), function(i) {
     projected <- spTransform(buffers[groups == i, ], veloxed_data$crs)
-    veloxed_data$extract(projected, fun = fun, na.rm = TRUE)
+    veloxed_data$extract(projected, fun = fun)
   }, mc.cores = ncores) %>% unlist
 }
