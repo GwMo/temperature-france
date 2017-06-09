@@ -54,9 +54,19 @@ coordinates(insee_pop) <- ~ x + y
 proj4string(insee_pop) <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
 insee_pop <- SpatialPixelsDataFrame(insee_pop, insee_pop@data) %>% raster
 
-# Disaggregate the data from 200 m to 50 m
+# Save the raster for reference
+path <- file.path(insee_dir, "insee_population_200m.tif")
+paste("  Saving raster to", path) %>% report
+writeRaster(insee_pop, path)
+
+# Disaggregate the data from 200 m to 50 m and divide the population by 16
 report("  Disaggregating to 50 m")
 insee_pop <- disaggregate(insee_pop, 4) / 16
+
+# Save the disaggregated raster for reference
+path <- file.path(insee_dir, "insee_population_50m.tif")
+paste("  Saving disaggregated raster to", path) %>% report
+writeRaster(insee_pop, path)
 
 # Convert to a velox object
 report("  Loading with velox")
