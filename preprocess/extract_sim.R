@@ -78,7 +78,8 @@ for (variable in variables) {
     names(annual_data) <- dates
 
     # Add the reference grid row and column numbers
-    annual_data$row_col <- paste(grid$row, grid$col, sep = "_")
+    annual_data$row <- grid$row
+    annual_data$col <- grid$col
 
     # Gather all date columns into a single column
     col_name <- paste("sim", variable, sep = "_")
@@ -88,7 +89,7 @@ for (variable in variables) {
     # Save the results
     filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds")
     paste("  Saving", filename) %>% report
-    file.path(output_dir, filename) %>% saveRDS(annual_data, .)
+    file.path(output_dir, filename) %>% saveRDS(annual_data, ., compress = TRUE)
 
     # Return NULL to save memory
     NULL
