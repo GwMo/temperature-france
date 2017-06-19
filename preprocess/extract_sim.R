@@ -82,12 +82,12 @@ for (variable in variables) {
 
     # Gather all date columns into a single column
     col_name <- paste("sim", variable, sep = "_")
-    paste("    Gathering", year, "data as", col_name) %>% report
+    paste("  Gathering", year, "data as", col_name) %>% report
     annual_data <- gather_(annual_data, "date", col_name, dates)
 
     # Save the results
     filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds")
-    paste("    Saving", filename) %>% report
+    paste("  Saving", filename) %>% report
     file.path(output_dir, filename) %>% saveRDS(annual_data, .)
 
     # Return NULL to save memory
