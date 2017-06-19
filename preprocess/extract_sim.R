@@ -39,14 +39,16 @@ variables <-
   gsub("SIM2_\\d{4}-(.+)\\.tif", "\\1", .) %>%
   unique
 
-years <- 2000:2016
+years <- as.character(2000:2016)
 
 for (variable in variables) {
   paste("Processing", variable) %>% report
 
   # Extract the data for all years
-  for (year in years) {
-    # Load the annual data as a raster brick
+  all_data <- lapply(years, function(year) {
+    paste("  Extracting data for", year) %>% report
+
+    # Load the data for the year as a raster brick
     sim_data <-
       paste0("SIM2_", year, "-", variable, ".tif") %>%
       file.path(sim_dir, .) %>%
@@ -56,13 +58,18 @@ for (variable in variables) {
     # The SIM data resolution is 8 km compared to 1 km for our reference grid
     # so extracting by points gives a reasonable approximation, and it is much
     # faster than disaggregating the SIM data and then extracting by buffers
-    paste("  Extracting data for", year) %>% report
-    annual_data <- mclapply(1:max(groups), function(i) {
+    mclapply(1:max(groups), function(i) {
       spTransform(grid[groups == i, 1], proj4string(sim_data)) %>%
       extract(sim_data, .)
     }, mc.cores = ncores) %>% do.call(rbind, .) %>% as.data.frame
+  })
+  names(all_data) <- years
 
-    # Name the columns by date
+  # Format and save the annual extracts in parallel
+  mclapply(years, function(year) {
+    annual_data <- all_data[[year]]
+
+    # Name the columns of the extracted data by date
     dates <-
       colnames(annual_data) %>%
       gsub("SIM2_(\\d{4}).+\\.(\\d+)", "\\1-\\2", .) %>% # Extract year and day of year
@@ -71,23 +78,24 @@ for (variable in variables) {
     names(annual_data) <- dates
 
     # Add the reference grid row and column numbers
-    annual_data$row <- grid$row
-    annual_data$col <- grid$col
+    annual_data$row_col <- paste(grid$row, grid$col, sep = "_")
 
     # Gather all date columns into a single column
     col_name <- paste("sim", variable, sep = "_")
-    paste("  Gathering data as", col_name) %>% report
+    paste("    Gathering", year, "data as", col_name) %>% report
     annual_data <- gather_(annual_data, "date", col_name, dates)
 
     # Save the results
     filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds")
-    paste("  Saving as", filename) %>% report
+    paste("    Saving", filename) %>% report
     file.path(output_dir, filename) %>% saveRDS(annual_data, .)
 
-    # Clear memory
-    rm(annual_data, dates, sim_data)
-    gc()
-  }
+    # Return NULL to save memory
+    NULL
+  }, mc.cores = ncores)
+
+  # Clear memory
+  rm(all_data)
 }
 
 report("Done")
