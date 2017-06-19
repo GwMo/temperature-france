@@ -17,7 +17,7 @@ setwd(output_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-# Load the reference grid and save its original column names
+# Load the reference grid
 report("Loading MODIS reference grid")
 grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
 
@@ -52,7 +52,8 @@ insee_pop <- insee_pop[ , c("x", "y", "ind_c")]
 names(insee_pop)[3] <- "population"
 coordinates(insee_pop) <- ~ x + y
 proj4string(insee_pop) <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
-insee_pop <- SpatialPixelsDataFrame(insee_pop, insee_pop@data) %>% raster
+gridded(insee_pop) <- TRUE
+insee_pop <- raster(insee_pop)
 
 # Save the raster for reference
 path <- file.path(insee_dir, "insee_population_200m.tif")

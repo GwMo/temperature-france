@@ -48,7 +48,7 @@ location <-
 
 # Load the the first dataset of the tile at that location for each MODIS product
 rasters <- sapply(products, function(path) {
-  paste(location, ".+\\.hdf$", sep = "") %>%
+  paste0(location, ".+\\.hdf$") %>%
   list_tiles(path, .) %>%
   get_subdatasets(.) %>%
   .[1] %>%

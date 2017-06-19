@@ -16,7 +16,7 @@ setwd(output_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-# Load the reference grid and save its original column names
+# Load the reference grid
 report("Loading MODIS reference grid")
 grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
 
@@ -85,7 +85,7 @@ for (year in c(2000, 2006, 2012)) {
   }) %>% cbind(grid@data, .)
 
   # Save the result and clear memory
-  path <- paste("modis_1km_clc", year, sep = "_") %>% file.path(output_dir, .)
+  path <- paste0("modis_1km_clc_", year, ".rds") %>% file.path(output_dir, .)
   paste("  Saving to", path) %>% report
   saveRDS(result, path)
   rm(clc_data, vx, result)

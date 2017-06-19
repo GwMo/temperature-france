@@ -59,7 +59,7 @@ buffer_parallel <- function(pts, width, capStyle = "ROUND") {
 for (distance in c(1, 3)) {
   paste("Creating", distance, "km square buffer") %>% display
   buffers <- buffer_parallel(grid_3035, distance, capStyle = "SQUARE")
-  filename <- paste("modis_square_", distance, "km.rds", sep = "")
+  filename <- paste0("modis_square_", distance, "km.rds")
   paste("  Saving", filename) %>% display
   saveRDS(buffers, filename)
   rm(buffers)
@@ -69,7 +69,7 @@ for (distance in c(1, 3)) {
 for (distance in c(1, 3, 5, 10, 15)) {
   paste("Creating", distance, "km buffer") %>% display
   buffers <- buffer_parallel(grid_3035, distance)
-  filename <- paste("modis_round_", distance, "km.rds", sep = "")
+  filename <- paste0("modis_round_", distance, "km.rds")
   paste("  Saving to", filename) %>% display
   saveRDS(buffers, filename)
   rm(buffers)
