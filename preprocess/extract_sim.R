@@ -80,7 +80,7 @@ for (variable in variables) {
     annual_data <- gather_(annual_data, "date", col_name, dates)
 
     # Save the results
-    filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds2")
+    filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds")
     paste("  Saving as", filename) %>% report
     file.path(output_dir, filename) %>% saveRDS(annual_data, .)
 
