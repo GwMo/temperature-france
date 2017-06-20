@@ -3,7 +3,7 @@
 library(magrittr) # %>% pipe-like operator
 library(sp)       # classes and methods for spatial data
 library(rgeos)    # wrapper for GEOS to manipulate vector data
-                    # (GEOS must be present)
+                  # (GEOS must be present)
 library(parallel) # parallel computation
 
 # Function to display messages with a timestamp

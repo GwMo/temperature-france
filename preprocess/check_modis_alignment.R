@@ -3,10 +3,10 @@
 library(magrittr)  # %>% pipe-like operator
 library(sp)        # classes and methods for spatial data
 library(rgdal)     # wrapper for GDAL and proj.4 to manipulate spatial data
-                     # (GDAL and proj.4 must be present)
+                   # (GDAL and proj.4 must be present)
 library(raster)    # methods to manipulate gridded spatial data
 library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
-                     # (GDAL must have been built with HDF4 support)
+                   # (GDAL must have been built with HDF4 support)
 
 print("Checking alignement of MODIS products")
 

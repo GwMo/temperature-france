@@ -5,10 +5,10 @@
 library(magrittr)  # %>% pipe-like operator
 library(sp)        # classes and methods for spatial data
 library(rgdal)     # wrapper for GDAL and proj.4 to manipulate spatial data
-                     # (GDAL and proj.4 must be present)
+                   # (GDAL and proj.4 must be present)
 library(raster)    # methods to manipulate gridded spatial data
 library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
-                     # (GDAL must have been built with HDF4 support)
+                   # (GDAL must have been built with HDF4 support)
 
 message("Creating a reference grid from MODIS Aqua LST data")
 message("USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
