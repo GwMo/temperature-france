@@ -54,20 +54,20 @@ buffer_parallel <- function(pts, width, capStyle = "ROUND") {
 
 # Generate 1 km and 3 km square buffers around each grid point
 for (distance in c(1, 3)) {
-  paste("Creating", distance, "km square buffer") %>% display
+  paste("Creating", distance, "km square buffer") %>% report
   buffers <- buffer_parallel(grid_3035, distance, capStyle = "SQUARE")
   filename <- paste0("modis_square_", distance, "km.rds")
-  paste("  Saving as", filename) %>% display
+  paste("  Saving as", filename) %>% report
   saveRDS(buffers, filename)
   rm(buffers)
 }
 
 # Generate 1 km to 15 km circular buffers around each grid point
 for (distance in c(1, 3, 5, 10, 15)) {
-  paste("Creating", distance, "km buffer") %>% display
+  paste("Creating", distance, "km buffer") %>% report
   buffers <- buffer_parallel(grid_3035, distance)
   filename <- paste0("modis_round_", distance, "km.rds")
-  paste("  Saving as", filename) %>% display
+  paste("  Saving as", filename) %>% report
   saveRDS(buffers, filename)
   rm(buffers)
 }
