@@ -82,6 +82,10 @@ pts <- mos[mos$mask == 1] %>% .[, c("x", "y", "row", "col")] %>% as.data.frame
 coordinates(pts) <- ~ x + y
 projection(pts) <- projection(mos)
 
+# Assign an id to each cell and reorder the data columns
+pts$id <- 1:nrow(pts)
+pts <- pts[, c("id", "row", "col")]
+
 # Project the spatial points dataframe to EPSG:2154
 pts <- spTransform(pts, projection(france_2154))
 
