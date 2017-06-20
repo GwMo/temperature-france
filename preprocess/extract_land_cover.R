@@ -16,10 +16,6 @@ setwd(output_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-# Load the reference grid
-report("Loading MODIS reference grid")
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
-
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
@@ -82,12 +78,17 @@ for (year in c(2000, 2006, 2012)) {
 
     # Calculate the area of the group classes for each buffer
     parallel_extract(vx, squares, function(x) { mean(x %in% vals) }, ncores)
-  }) %>% cbind(grid@data, .)
+  })
 
-  # Save the result and clear memory
+  # Add the modis grid id, transform to data frame, and save
   path <- paste0("modis_1km_clc_", year, ".rds") %>% file.path(output_dir, .)
   paste("  Saving to", path) %>% report
-  saveRDS(result, path)
+  data.frame(
+    "modis_grid_id" = squares$id,
+    result
+  ) %>% saveRDS(., path)
+
+  # Clear memory
   rm(clc_data, vx, result)
 }
 

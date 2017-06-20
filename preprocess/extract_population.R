@@ -17,10 +17,6 @@ setwd(output_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-# Load the reference grid
-report("Loading MODIS reference grid")
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
-
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
@@ -58,7 +54,7 @@ insee_pop <- raster(insee_pop)
 # Save the raster for reference
 path <- file.path(insee_dir, "insee_population_200m.tif")
 paste("  Saving raster to", path) %>% report
-writeRaster(insee_pop, path)
+writeRaster(insee_pop, path, overwrite = TRUE)
 
 # Disaggregate the data from 200 m to 50 m and divide the population by 16
 report("  Disaggregating to 50 m")
@@ -67,7 +63,7 @@ insee_pop <- disaggregate(insee_pop, 4) / 16
 # Save the disaggregated raster for reference
 path <- file.path(insee_dir, "insee_population_50m.tif")
 paste("  Saving disaggregated raster to", path) %>% report
-writeRaster(insee_pop, path)
+writeRaster(insee_pop, path, overwrite = TRUE)
 
 # Convert to a velox object
 report("  Loading with velox")
@@ -76,11 +72,14 @@ insee_pop <- velox(insee_pop)
 # Extract the total population of each 1 km square buffer
 report("  Extracting population")
 sum_pop <- function(x) { sum(x, na.rm = TRUE) }
-grid$populations <- parallel_extract(insee_pop, squares, sum_pop, ncores)
+insee_pop <- parallel_extract(insee_pop, squares, sum_pop, ncores)
 
-# Save the result
+# Add the modis grid id, transform to a data frame, and save
 path <- file.path(output_dir, "modis_1km_population.rds")
 paste("  Saving to", path) %>% report
-saveRDS(grid@data, path)
+data.frame(
+  "modis_grid_id" = squares$id,
+  "population" = insee_pop
+) %>% saveRDS(., path)
 
 report("Done")
