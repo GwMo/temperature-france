@@ -17,6 +17,8 @@ setwd(output_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
+report("Extracting INSEE population")
+
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
@@ -27,8 +29,6 @@ ncores <- 16
 ##################
 # INSEE POPULATION
 ##################
-
-report("Extracting INSEE population density")
 
 # Load the INSEE 200 m population data
 report("  Loading INSEE 200 m population data")
