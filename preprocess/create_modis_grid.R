@@ -13,7 +13,7 @@ library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
 # Set directories
 data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
-grid_dir <- file.path(model_dir, "grids") %>% path.expand
+grid_dir <- file.path(model_dir, "grids")
 dir.create(grid_dir, recursive = TRUE, showWarnings = FALSE)
 setwd(grid_dir)
 
