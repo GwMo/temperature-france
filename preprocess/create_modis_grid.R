@@ -10,9 +10,6 @@ library(raster)    # methods to manipulate gridded spatial data
 library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
                    # (GDAL must have been built with HDF4 support)
 
-message("Creating a reference grid from MODIS Aqua LST data")
-message("USE CAUTION if check_modis_alignment script reported misaligned MODIS products\n")
-
 # Set directories
 data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
@@ -22,6 +19,9 @@ setwd(grid_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+
+report("Creating a reference grid from MODIS Aqua LST data")
+report("USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
 
 # Find the tiles for the first date with MODIS Aqua LST data
 tiles <-
@@ -93,3 +93,5 @@ pts <- spTransform(pts, projection(france_2154))
 filename <- "modis_grid.rds"
 paste("Saving points to", filename) %>% report
 saveRDS(pts, filename)
+
+report("Done")
