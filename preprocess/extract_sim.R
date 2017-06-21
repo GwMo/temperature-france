@@ -77,9 +77,8 @@ for (variable in variables) {
       format(., "%Y-%m-%d")                              # Format as YYYY-MM-DD
     names(annual_data) <- dates
 
-    # Add the reference grid row and column numbers
-    annual_data$row <- grid$row
-    annual_data$col <- grid$col
+    # Add the modis grid id
+    annual_data$modis_grid_id <- grid$id
 
     # Gather all date columns into a single column
     col_name <- paste("sim", variable, sep = "_")
