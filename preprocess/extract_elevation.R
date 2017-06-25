@@ -17,11 +17,6 @@ file.path(model_dir, "helpers", "report.R") %>% source
 file.path(model_dir, "helpers", "get_ncores.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-# Load the reference grid and save its original column names
-report("Loading MODIS reference grid")
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
-grid_col_names <- names(grid)
-
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
@@ -46,14 +41,15 @@ vx <- velox(aster_dem)
 
 # Extract the mean elevation of each buffer
 report("  Extracting elevation")
-grid$elevation <- parallel_extract(vx, squares, fun = mean, ncores = ncores)
+elevation <-
+  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
+  cbind("modis_grid_id" = squares$id, "elevation" = .)
 
-# Save the result, clear memory, and reset the reference grid
+# Add the MODIS grid id, save, and clear memory
 path <- file.path(output_dir, "modis_1km_aster_dem.rds")
 paste("  Saving to", path) %>% report
-saveRDS(grid@data, path)
-rm(aster_dir, aster_dem, vx)
-grid <- grid[ , grid_col_names]
+saveRDS(elevation, path)
+rm(aster_dir, aster_dem, vx, elevation)
 
 #############
 # EU DEM v1.0
@@ -72,14 +68,15 @@ vx <- velox(eu_dem_v10)
 
 # Extract the mean elevation of each buffer
 report("  Extracting elevation")
-grid$elevation <- parallel_extract(vx, squares, fun = mean, ncores = ncores)
+elevation <-
+  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
+  cbind("modis_grid_id" = squares$id, "elevation" = .)
 
-# Save the result, clear memory, and reset the reference grid
+# Add the MODIS grid id, save, and clear memory
 path <- file.path(output_dir, "modis_1km_eu_dem_v10.rds")
 paste("  Saving to", path) %>% report
-saveRDS(grid@data, path)
-rm(eu_dem_v10, vx)
-grid <- grid[ , grid_col_names]
+saveRDS(elevation, path)
+rm(eu_dem_v10, vx, elevation)
 
 #############
 # EU DEM v1.1
@@ -97,14 +94,15 @@ vx <- velox(eu_dem_v11)
 
 # Extract the mean elevation of each buffer
 report("  Extracting elevation")
-grid$elevation <- parallel_extract(vx, squares, fun = mean, ncores = ncores)
+elevation <-
+  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
+  cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Save the result, clear memory, and reset the reference grid
 path <- file.path(output_dir, "modis_1km_eu_dem_v11.rds")
 paste("  Saving to", path) %>% report
-saveRDS(grid@data, path)
-rm(eu_dem_dir, eu_dem_v11, vx)
-grid <- grid[ , grid_col_names]
+saveRDS(elevation, path)
+rm(eu_dem_v11, vx, elevation)
 
 #########
 # IGN DEM
@@ -123,13 +121,14 @@ vx <- velox(ign_dem)
 
 # Extract the mean elevation of each buffer
 report("  Extracting elevation")
-grid$elevation <- parallel_extract(vx, squares, fun = mean, ncores = ncores)
+elevation <-
+  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
+  cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Save the result, clear memory, and reset the reference grid
 path <- file.path(output_dir, "modis_1km_ign_dem.rds")
 paste("  Saving to", path) %>% report
-saveRDS(grid@data, path)
-rm(ign_dir, ign_dem, vx)
-grid <- grid[ , grid_col_names]
+saveRDS(elevation, path)
+rm(ign_dir, ign_dem, vx, elevation)
 
 report("Done")
