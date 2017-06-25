@@ -1,6 +1,7 @@
-buffers/
-data/
-grids/
-test/
+buffers
+data
+grids
+notes
+test
 
 .Rhistory
