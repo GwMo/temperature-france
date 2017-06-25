@@ -14,6 +14,7 @@ setwd(output_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+file.path(model_dir, "helpers", "get_ncores.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
 # Load the reference grid and save its original column names
@@ -25,8 +26,8 @@ grid_col_names <- names(grid)
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
 
-# Use 12 cores for parallel extraction
-ncores <- 12
+# Detect the number of cores available
+ncores <- get_ncores()
 
 #############
 # ASTER GDEM2

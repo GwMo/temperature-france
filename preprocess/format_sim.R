@@ -10,9 +10,10 @@ model_dir <- file.path("~", "temperature-france") %>% path.expand
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+file.path(model_dir, "helpers", "get_ncores.R") %>% source
 
-# Use 16 cores for parallel tasks
-ncores <- 16
+# Detect the number of cores available
+ncores <- get_ncores()
 
 ################################
 # METEO FRANCE SIM WEATHER MODEL

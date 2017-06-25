@@ -14,6 +14,7 @@ setwd(buffer_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+file.path(model_dir, "helpers", "get_ncores.R") %>% source
 
 report("Generating buffers around the reference grid points")
 
@@ -33,8 +34,7 @@ epsg_3035 <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GR
 grid_3035 <- spTransform(grid, epsg_3035)
 rm(grid)
 
-# Define a function to buffer in parallel using 16 cores
-ncores <- 16
+# Define a function to buffer in parallel
 buffer_parallel <- function(pts, width, capStyle = "ROUND") {
   # Assign the grid points to ncores groups
   groups <- ceiling(1:nrow(pts) / 5000)
@@ -51,6 +51,9 @@ buffer_parallel <- function(pts, width, capStyle = "ROUND") {
   buffers@plotOrder <- 1:nrow(buffers)
   buffers
 }
+
+# Detect the number of cores available
+ncores <- get_ncores()
 
 # Generate 1 km and 3 km square buffers around each grid point
 for (distance in c(1, 3)) {

@@ -14,6 +14,7 @@ setwd(output_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+file.path(model_dir, "helpers", "get_ncores.R") %>% source
 
 # Load the reference grid
 report("Loading MODIS reference grid")
@@ -22,8 +23,8 @@ grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
 # Assign the reference grid points to groups of 10,000
 groups <- ceiling(1:length(grid) / 10000)
 
-# Use 16 cores for parallel tasks
-ncores <- 16
+# Detect the number of cores available
+ncores <- get_ncores()
 
 ################################
 # METEO FRANCE SIM WEATHER MODEL

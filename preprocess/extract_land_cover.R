@@ -14,6 +14,7 @@ setwd(output_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
+file.path(model_dir, "helpers", "get_ncores.R") %>% source
 file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
 report("Extracting Corine Land Cover")
@@ -22,8 +23,8 @@ report("Extracting Corine Land Cover")
 report("Loading 1 km square buffers")
 squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
 
-# Use 16 cores for parallel extraction
-ncores <- 16
+# Detect the number of cores available
+ncores <- get_ncores()
 
 ###################
 # CORINE LAND COVER
