@@ -1,4 +1,10 @@
-# Generate buffers around the points of the reference grid
+# Create a 1 square km buffer around each point of the MODIS reference grid.
+# The buffers will be used to extract data for association with the grid points.
+#
+# * Project the MODIS reference grid to EPSG:3035, an equal-area projection
+# * Create square and round buffers of varying width around each grid point
+# * Project the buffers to EPSG:2154
+# * Save
 
 library(magrittr) # %>% pipe-like operator
 library(sp)       # classes and methods for spatial data

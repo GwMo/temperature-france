@@ -1,6 +1,15 @@
 # Create a reference grid covering metropolitan France (except Corsica) aligned
 # to the MODIS Aqua LST data. Assumes the check_modis_alignment script reported
 # no significant misalignment between modis products.
+#
+# * Mosaic all MODIS Aqua LST tiles for a single date
+# * Crop to extent of France
+# * Set cell x coordinate, y coordinate, row number, and col number
+# * Mask by France
+# * Subset the unmasked cells
+# * Transform to a SpatialPointsDataFrame
+# * Project to EPSG:2154
+# * Save
 
 library(magrittr)  # %>% pipe-like operator
 library(sp)        # classes and methods for spatial data
@@ -21,7 +30,7 @@ setwd(grid_dir)
 file.path(model_dir, "helpers", "report.R") %>% source
 
 report("Creating a reference grid from MODIS Aqua LST data")
-report("USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
+report("  USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
 
 # Find the tiles for the first date with MODIS Aqua LST data
 tiles <-
