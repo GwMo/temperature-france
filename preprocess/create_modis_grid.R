@@ -40,10 +40,9 @@ rasters <- sapply(tiles, function(tile) {
 })
 names(rasters) <- NULL # clear the list names to avoid an error when mosaicing
 
-# Load a shapefile of France with 500 m buffers and project to match the tiles
+# Load a shapefile of France in EPSG:2154 and project to match the tiles
 france_2154 <-
-  file.path(data_dir, "ign", "borders", "modis_grid_buffers", "france_epsg-2154_250m.shp") %>%
-  shapefile
+  file.path(data_dir, "ign", "borders", "france_epsg-2154.shp") %>% shapefile
 
 # Project the shapefile to match the tiles
 france_sinu <- rasters[[1]] %>% projection %>% spTransform(france_2154, .)
