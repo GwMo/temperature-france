@@ -3,6 +3,7 @@
 library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation
 library(tidyr)    # data tidying
+library(fst)      # fast serialization
 library(sp)       # classes and methods for spatial data
 library(raster)   # methods to manipulate gridded spatial data
 
@@ -10,7 +11,6 @@ data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
 output_dir <- file.path(model_dir, "data", "sim")
 dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
@@ -40,16 +40,22 @@ variables <-
   gsub("SIM2_\\d{4}-(.+)\\.tif", "\\1", .) %>%
   unique
 
-years <- as.character(2000:2016)
+# Extract and save the data
+for (year in as.character(2000:2016)) {
+  paste("Processing", year) %>% report
 
-for (variable in variables) {
-  paste("Processing", variable) %>% report
+  # Create a directory to hold the extracted data for this year
+  year_dir <- file.path(output_dir, year)
+  dir.create(year_dir, showWarnings = FALSE)
+  setwd(year_dir)
 
-  # Extract the data for all years
-  all_data <- lapply(years, function(year) {
-    paste("  Extracting data for", year) %>% report
+  # Extract the data for each variable
+  # Produces a "wide" table for each variable with a column for each date
+  report("  Extracting data")
+  extracted <- lapply(variables, function(variable) {
+    paste0("    ", variable) %>% report
 
-    # Load the data for the year as a raster brick
+    # Load the data for the variable as a raster brick
     sim_data <-
       paste0("SIM2_", year, "-", variable, ".tif") %>%
       file.path(sim_dir, .) %>%
@@ -64,39 +70,74 @@ for (variable in variables) {
       extract(sim_data, .)
     }, mc.cores = ncores) %>% do.call(rbind, .) %>% as.data.frame
   })
-  names(all_data) <- years
+  names(extracted) <- variables
+  # 20 cores
+  #   18 seconds / variable = 163 seconds
+  #   1.84 GB / variable = 16.5 GB
 
-  # Format and save the annual extracts in parallel
-  mclapply(years, function(year) {
-    annual_data <- all_data[[year]]
+  # Gather the data for all variables by month and save to disk
+  report("  Gathering data")
+  lapply(1:12, function(month) {
+    paste0("    ", month.name[month]) %>% report
 
-    # Name the columns of the extracted data by date
-    dates <-
-      colnames(annual_data) %>%
-      gsub("SIM2_(\\d{4}).+\\.(\\d+)", "\\1-\\2", .) %>% # Extract year and day of year
-      as.Date(., format = "%Y-%j") %>%                   # Convert to date
-      format(., "%Y-%m-%d")                              # Format as YYYY-MM-DD
-    names(annual_data) <- dates
+    # For each variable, gather all data for the month into a single column
+    # Produces a "long" table for each variable with one column for all dates
+    gathered <- lapply(extracted, function(var_data) {
+      # Parse the variable from the first column name
+      variable <-
+        names(var_data)[1] %>%
+        gsub("SIM2_\\d{4}\\.(\\w+)\\.\\d+", "\\1", .)
 
-    # Add the modis grid id
-    annual_data$modis_grid_id <- grid$id
+      # Parse the dates from the column names
+      dates <-
+        names(var_data) %>%
+        gsub("SIM2_(\\d{4}).+\\.(\\d+)", "\\1-\\2", .) %>% # Extract year and day of year
+        as.Date(., format = "%Y-%j") %>%                   # Convert to date
+        format(., "%Y-%m-%d")                              # Format as YYYY-MM-DD
 
-    # Gather all date columns into a single column
-    col_name <- paste("sim", variable, sep = "_")
-    paste("  Gathering", year, "data as", col_name) %>% report
-    annual_data <- gather_(annual_data, "date", col_name, dates)
+      # Create a vector that selects all dates or column names for the month
+      selector <-
+        paste0(year, "-%02d") %>%
+        sprintf(., month) %>%
+        grepl(., dates)
 
-    # Save the results
-    filename <- paste0("modis_grid_sim_", variable, "-", year, ".rds")
-    paste("  Saving", filename) %>% report
-    file.path(output_dir, filename) %>% saveRDS(annual_data, ., compress = TRUE)
+      # Get the data for the month and rename the columns by date
+      month_data <- var_data[, selector]
+      names(month_data) <- dates[selector]
 
-    # Return NULL to save memory
-    NULL
-  }, mc.cores = ncores)
+      # Add the MODIS grid id
+      month_data$modis_grid_id <- grid$id
+
+      # Gather the data for all dates into a single column
+      gather_(month_data, "date", variable, dates[selector])
+    })
+    # 20 cores
+    #   1.1 seconds / variable = 10 seconds
+    #   389 MB / variable = 3.5 GB
+
+    # Get all MODIS grid id - date pairs from the data for the first variable
+    key_cols <- gathered[[1]][c("modis_grid_id", "date")]
+
+    # Combine the data into a single table keyed on MODIS grid id and date
+    gathered <-
+      lapply(gathered, function(var_data) { var_data[3] }) %>%
+      do.call(cbind, .) %>%
+      cbind(key_cols, .)
+    # 1.53 GB
+
+    # Save the data in fst file format with 50% compression
+    # write.fst is 35x faster than saveRDS
+    filename <-
+      paste0("modis_grid_sim_", year, "-%02d.fst") %>%
+      sprintf(., month)
+    paste0("      Saving as", filename) %>% report
+    write.fst(gathered, filename, compress = 50)
+  })
+  # 20 cores
+  #  16 seconds / month = 194 seconds
 
   # Clear memory
-  rm(all_data)
+  rm(extracted)
 }
 
 report("Done")
