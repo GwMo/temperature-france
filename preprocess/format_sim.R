@@ -1,4 +1,10 @@
 # Format SIM surface model output data to facilitate extraction
+#
+# For each annual data file
+# * Load the data
+# * Transform to a SpatialPixelsDataFrame
+# * For each variable of interest
+#   - Create and save a RasterStack with a separate layer for each day of data
 
 library(magrittr)   # %>% pipe-like operator
 library(parallel)   # parallel computation
@@ -125,6 +131,12 @@ for (path in data_files) {
   report("  Rasterizing")
   lapply(variables, function(v) {
     paste("    Stacking dates for", v) %>% report
+
+    # Stacking the layers in parallel requires a lot of memory, and if there is
+    # not enough some of the threads will be killed resulting in NULL values in
+    # the list that is returned, which results in an error when stacking:
+    #   Error in stack.default(NULL, NULL, <S4 object of class "RasterLayer">, :
+    #     at least one vector element is required
     stacked <- mclapply(dates, function(d) {
       layer <- sim_data[sim_data$date == d, v] %>% raster
       names(layer) <- d

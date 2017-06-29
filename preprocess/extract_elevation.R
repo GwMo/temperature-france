@@ -1,4 +1,10 @@
-# Extract elevation data from various datasets using the reference grid
+# Extract elevation data for the reference grid cells
+#
+# For each elevation dataset
+# * Load the data as a raster
+# * Convert to a velox object
+# * Extract by 1 km square buffers
+# * Add the MODIS grid id and save
 
 library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation

@@ -1,4 +1,10 @@
-# Extract population density data using the reference grid
+# Extract population data for the reference grid cells
+#
+# * Transform the population data to a raster
+# * Disaggregate to 50 m
+# * Convert to a velox object
+# * Extract by 1 km square buffers
+# * Add the MODIS grid id and save
 
 library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation

@@ -1,4 +1,15 @@
-# Extract SIM data using the reference grid
+# Extract SIM surface model data for the reference grid cells
+#
+# For each year
+# * For each variable of interest
+#   - Load the pre-formatted SIM data
+#   - Extract by grid points -> "wide" table with 1 data column per day
+# * For each month
+#   - For each variable of interest
+#     + Subset the extracted data for the month from the varible's "wide" table
+#     + Add the MODIS grid id
+#     + Gather the data into a single column -> "long" table with 1 data column
+#   - Combine the "long" tables for all the variables and save
 
 library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation
@@ -126,7 +137,7 @@ for (year_dir in list.dirs(sim_dir, recursive = FALSE)) {
     filename <-
       paste0("modis_grid_sim_", year, "-%02d.fst") %>%
       sprintf(., month)
-    paste("      Saving as", filename) %>% report
+    paste("      Saving to", filename) %>% report
     write.fst(gathered, filename, compress = 50)
   })
   # 20 cores

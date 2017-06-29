@@ -1,4 +1,11 @@
-# Extract land cover data using the reference grid
+# Extract land cover data for the reference grid cells
+#
+# For each land cover dataset
+# * Load the data as a raster
+# * Disaggregate to 50 m
+# * Convert to a velox object
+# * Extract by 1 km square buffers
+# * Add the MODIS grid id and save
 
 library(magrittr) # %>% pipe-like operator
 library(parallel) # parallel computation
