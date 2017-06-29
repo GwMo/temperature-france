@@ -7,10 +7,7 @@ library(fst)      # fast serialization
 library(sp)       # classes and methods for spatial data
 library(raster)   # methods to manipulate gridded spatial data
 
-data_dir <- file.path("~", "data") %>% path.expand
 model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data", "sim")
-dir.create(output_dir, showWarnings = FALSE)
 
 # Load helper functions
 file.path(model_dir, "helpers", "report.R") %>% source
@@ -32,22 +29,21 @@ ncores <- get_ncores()
 
 report("Extracting Meteo France SIM weather model predictions")
 
-sim_dir <- file.path(data_dir, "meteo_france", "sim", "annual")
-
-# Parse the variable names from the data file names
-variables <-
-  list.files(sim_dir, pattern = "^SIM2_\\d{4}-.+\\.tif$") %>%
-  gsub("SIM2_\\d{4}-(.+)\\.tif", "\\1", .) %>%
-  unique
+# Use pre-formatted SIM data
+sim_dir <- file.path(model_dir, "data", "sim")
 
 # Extract and save the data
-for (year in as.character(2000:2016)) {
+for (year_dir in list.dirs(sim_dir, recursive = FALSE)) {
+  setwd(year_dir)
+
+  year <- basename(year_dir)
   paste("Processing", year) %>% report
 
-  # Create a directory to hold the extracted data for this year
-  year_dir <- file.path(output_dir, year)
-  dir.create(year_dir, showWarnings = FALSE)
-  setwd(year_dir)
+  # Parse the variable names from the data file names
+  variables <-
+    list.files(year_dir, pattern = "^SIM2_\\d{4}-.+\\.tif$") %>%
+    gsub("SIM2_\\d{4}-(.+)\\.tif", "\\1", .) %>%
+    unique
 
   # Extract the data for each variable
   # Produces a "wide" table for each variable with a column for each date
@@ -58,7 +54,7 @@ for (year in as.character(2000:2016)) {
     # Load the data for the variable as a raster brick
     sim_data <-
       paste0("SIM2_", year, "-", variable, ".tif") %>%
-      file.path(sim_dir, .) %>%
+      file.path(year_dir, .) %>%
       brick
 
     # Extract data from the raster stack by the reference grid points
@@ -130,7 +126,7 @@ for (year in as.character(2000:2016)) {
     filename <-
       paste0("modis_grid_sim_", year, "-%02d.fst") %>%
       sprintf(., month)
-    paste0("      Saving as", filename) %>% report
+    paste("      Saving as", filename) %>% report
     write.fst(gathered, filename, compress = 50)
   })
   # 20 cores
