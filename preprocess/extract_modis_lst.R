@@ -49,7 +49,7 @@ qa_codes <- modis_lst_qa_code_table()
 
 # Extract Aqua and Terra data in sequence
 for(satellite in c("aqua", "terra")) {
-  paste("Processing MODIS", satellite, "LST data")
+  paste("Processing MODIS", satellite, "LST data") %>% report
 
   # Set the directory that contains the LST data for the satellite
   lst_dir <-
