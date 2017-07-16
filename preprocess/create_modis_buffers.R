@@ -12,20 +12,17 @@ library(rgeos)    # wrapper for GEOS to manipulate vector data
                   # (GEOS must be present)
 library(parallel) # parallel computation
 
-# Set directories
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-buffer_dir <- file.path(model_dir, "buffers")
-dir.create(buffer_dir, showWarnings = FALSE)
-setwd(buffer_dir)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
 
-report("Generating buffers around the reference grid points")
+report("Generating buffers around the MODIS reference grid points")
+
 
 # Load the MODIS reference grid
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
+grid <- file.path(grids_dir, "modis_grid.rds") %>% readRDS
 
 # Define EPSG:2154, the RGF93 / Lambert-93 projection
 # The official Lambert conformal conic projection for metropolitan France
@@ -65,9 +62,9 @@ ncores <- get_ncores()
 for (distance in c(1, 3)) {
   paste("Creating", distance, "km square buffer") %>% report
   buffers <- buffer_parallel(grid_3035, distance, capStyle = "SQUARE")
-  filename <- paste0("modis_square_", distance, "km.rds")
-  paste("  Saving as", filename) %>% report
-  saveRDS(buffers, filename)
+  path <- file.path(buffers_dir, paste0("modis_square_", distance, "km.rds"))
+  paste("  Saving to", path) %>% report
+  saveRDS(buffers, path)
   rm(buffers)
 }
 
@@ -75,9 +72,9 @@ for (distance in c(1, 3)) {
 for (distance in c(1, 3, 5, 10, 15)) {
   paste("Creating", distance, "km buffer") %>% report
   buffers <- buffer_parallel(grid_3035, distance)
-  filename <- paste0("modis_round_", distance, "km.rds")
-  paste("  Saving as", filename) %>% report
-  saveRDS(buffers, filename)
+  path <- file.path(buffers_dir, paste0("modis_round_", distance, "km.rds"))
+  paste("  Saving to", path) %>% report
+  saveRDS(buffers, path)
   rm(buffers)
 }
 

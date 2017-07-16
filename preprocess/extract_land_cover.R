@@ -13,22 +13,19 @@ library(sp)       # classes and methods for spatial data
 library(raster)   # methods to manipulate gridded spatial data
 library(velox)    # c++ accelerated raster manipulation
 
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data")
-dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
+file.path(helpers_dir, "parallel_extract.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
-file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
-report("Extracting Corine Land Cover")
+report("Extracting Corine Land Cover data")
+
 
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
-squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
+squares <- file.path(buffers_dir, "modis_square_1km.rds") %>% readRDS
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -64,7 +61,7 @@ clc_groups <- list(
 
 # Extract the area for each group of land cover classes in 2000, 2006, and 2012
 for (year in c(2000, 2006, 2012)) {
-  paste("Extracting Corine Land Cover", year, "data") %>% report
+  paste("Loading CLC", year, "data") %>% report
 
   # Load the raster data for the year
   # This file has already been mosaiced and clipped to France with a 1 km buffer
@@ -91,7 +88,7 @@ for (year in c(2000, 2006, 2012)) {
   })
 
   # Add the modis grid id, transform to data frame, and save
-  path <- paste0("modis_1km_clc_", year, ".rds") %>% file.path(output_dir, .)
+  path <- paste0("modis_1km_clc_", year, ".rds") %>% file.path(extracts_dir, .)
   paste("  Saving to", path) %>% report
   data.frame(
     "modis_grid_id" = squares$id,

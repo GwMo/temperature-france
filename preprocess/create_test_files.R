@@ -1,15 +1,20 @@
+# Create small subsets of the reference grid and buffers for testing
+
 library("magrittr")
 library("sp")
 library("raster")
 
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-test_dir <- file.path(model_dir, "test")
-dir.create(test_dir, showWarnings = FALSE)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
 
 report("Creating test files")
+
+
+# Create a subdir to hold the test files
+test_dir <- file.path(model_dir, "test")
+dir.create(test_dir, showWarnings = FALSE)
 
 # france <- shapefile("~/data/ign/borders/france_epsg-2154.shp")
 
@@ -19,12 +24,12 @@ report("Creating test files")
 
 report("Loading MODIS reference grid")
 
-output_dir <- file.path(test_dir, "grids")
-dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
+test_grids_dir <- file.path(test_dir, "grids")
+dir.create(test_grids_dir, showWarnings = FALSE)
+setwd(test_grids_dir)
 
-pts <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
-mos <- file.path(model_dir, "grids", "modis_grid_sinusoidal.tif") %>% brick
+pts <- file.path(grids_dir, "modis_grid.rds") %>% readRDS
+mos <- file.path(grids_dir, "modis_grid_sinusoidal.tif") %>% brick
 names(mos) <- c("x", "y", "row", "col", "mask")
 
 
@@ -104,11 +109,11 @@ rm(pts, mos)
 
 report("Loading MODIS 1km square buffers")
 
-output_dir <- file.path(test_dir, "buffers")
-dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
+test_buffers_dir <- file.path(test_dir, "buffers")
+dir.create(test_buffers_dir, showWarnings = FALSE)
+setwd(test_buffers_dir)
 
-squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
+squares <- file.path(buffers_dir, "modis_square_1km.rds") %>% readRDS
 
 # Full-size shapefiles
 report("  Saving as shapefile")

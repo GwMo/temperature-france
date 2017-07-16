@@ -18,15 +18,18 @@ library(fst)      # fast serialization
 library(sp)       # classes and methods for spatial data
 library(raster)   # methods to manipulate gridded spatial data
 
-model_dir <- file.path("~", "temperature-france") %>% path.expand
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
+
+report("Extracting Meteo France SIM surface model output")
+
 
 # Load the reference grid
 report("Loading MODIS reference grid")
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
+grid <- file.path(grids_dir, "modis_grid.rds") %>% readRDS
 
 # Assign the reference grid points to groups of 10,000
 groups <- ceiling(1:length(grid) / 10000)
@@ -41,12 +44,10 @@ ncores <- get_ncores()
 report("Extracting Meteo France SIM weather model predictions")
 
 # Use pre-formatted SIM data
-sim_dir <- file.path(model_dir, "data", "sim")
+sim_dir <- file.path(extracts_dir, "sim")
 
 # Extract and save the data
 for (year_dir in list.dirs(sim_dir, recursive = FALSE)) {
-  setwd(year_dir)
-
   year <- basename(year_dir)
   paste("Processing", year) %>% report
 
@@ -134,11 +135,12 @@ for (year_dir in list.dirs(sim_dir, recursive = FALSE)) {
 
     # Save the data in fst file format with 50% compression
     # write.fst is 35x faster than saveRDS
-    filename <-
+    path <-
       paste0("modis_grid_sim_", year, "-%02d.fst") %>%
-      sprintf(., month)
-    paste("      Saving to", filename) %>% report
-    write.fst(gathered, filename, compress = 50)
+      sprintf(., month) %>%
+      file.path(year_dir, .)
+    paste("      Saving to", path) %>% report
+    write.fst(gathered, path, compress = 50)
   })
   # 20 cores
   #  16 seconds / month = 194 seconds

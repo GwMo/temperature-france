@@ -14,18 +14,18 @@ library(rgdal)     # wrapper for GDAL and proj.4 to manipulate spatial data
 library(raster)    # methods to manipulate gridded spatial data
 library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
 
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data", "modis")
-dir.create(output_dir, showWarnings = FALSE)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
+
+report("Extracting MODIS NDVI data")
+
 
 # Load the reference grid
 report("Loading MODIS reference grid")
-grid <- file.path(model_dir, "grids", "modis_grid.rds") %>% readRDS
+grid <- file.path(grids_dir, "modis_grid.rds") %>% readRDS
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -41,7 +41,7 @@ report("Projecting grid to MODIS sinusoidal")
 grid <- spTransform(grid, "+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs")
 
 # Load a code table to aid in deciphering MODIS NDVI QA bit codes
-file.path(model_dir, "helpers", "modis_ndvi_qa_code_table.R") %>% source
+file.path(helpers_dir, "modis_ndvi_qa_code_table.R") %>% source
 qa_codes <- modis_ndvi_qa_code_table()
 # 16 seconds
 
@@ -61,7 +61,7 @@ for(satellite in c("aqua", "terra")) {
     d <- basename(date_dir) %>% as.Date
 
     # Create a directory to hold the extracted data
-    year_dir <- format(d, "%Y") %>% file.path(output_dir, .)
+    year_dir <- format(d, "%Y") %>% file.path(extracts_dir, .)
     dir.create(year_dir, showWarnings = FALSE)
 
     format(d, "%Y-%m") %>%

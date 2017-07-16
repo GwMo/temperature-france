@@ -12,20 +12,19 @@ library(sp)       # classes and methods for spatial data
 library(raster)   # methods to manipulate gridded spatial data
 library(velox)    # c++ accelerated raster manipulation
 
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data")
-dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
+file.path(helpers_dir, "parallel_extract.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
-file.path(model_dir, "helpers", "parallel_extract.R") %>% source
+
+report("Extracting elevation data")
+
 
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
-squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
+squares <- file.path(buffers_dir, "modis_square_1km.rds") %>% readRDS
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -52,7 +51,7 @@ elevation <-
   cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Add the MODIS grid id, save, and clear memory
-path <- file.path(output_dir, "modis_1km_aster_dem.rds")
+path <- file.path(extracts_dir, "modis_1km_aster_dem.rds")
 paste("  Saving to", path) %>% report
 saveRDS(elevation, path)
 rm(aster_dir, aster_dem, vx, elevation)
@@ -79,7 +78,7 @@ elevation <-
   cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Add the MODIS grid id, save, and clear memory
-path <- file.path(output_dir, "modis_1km_eu_dem_v10.rds")
+path <- file.path(extracts_dir, "modis_1km_eu_dem_v10.rds")
 paste("  Saving to", path) %>% report
 saveRDS(elevation, path)
 rm(eu_dem_v10, vx, elevation)
@@ -105,7 +104,7 @@ elevation <-
   cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Save the result, clear memory, and reset the reference grid
-path <- file.path(output_dir, "modis_1km_eu_dem_v11.rds")
+path <- file.path(extracts_dir, "modis_1km_eu_dem_v11.rds")
 paste("  Saving to", path) %>% report
 saveRDS(elevation, path)
 rm(eu_dem_v11, vx, elevation)
@@ -132,9 +131,10 @@ elevation <-
   cbind("modis_grid_id" = squares$id, "elevation" = .)
 
 # Save the result, clear memory, and reset the reference grid
-path <- file.path(output_dir, "modis_1km_ign_dem.rds")
+path <- file.path(extracts_dir, "modis_1km_ign_dem.rds")
 paste("  Saving to", path) %>% report
 saveRDS(elevation, path)
 rm(ign_dir, ign_dem, vx, elevation)
+
 
 report("Done")

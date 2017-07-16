@@ -12,14 +12,14 @@ library(data.table) # fast loading of data files
 library(sp)         # classes and methods for spatial data
 library(raster)     # methods to manipulate gridded spatial data
 
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data", "sim")
-dir.create(output_dir, showWarnings = FALSE)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
+
+report("Formatting Meteo France SIM surface model output")
+
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -27,8 +27,6 @@ ncores <- get_ncores()
 ################################
 # METEO FRANCE SIM SURFACE MODEL
 ################################
-
-report("Formatting Meteo France SIM surface model predictions")
 
 sim_dir <- file.path(data_dir, "meteo_france", "sim")
 
@@ -40,12 +38,11 @@ data_files <-
 # Process the annual SIM model output files
 for (path in data_files) {
   # Create a directory to store the formatted data
-  annual_output_dir <-
+  year_dir <-
     basename(path) %>%
     gsub("SIM2_(\\d{4})\\.csv", "\\1", .) %>%
-    file.path(output_dir, .)
-  dir.create(annual_output_dir, showWarnings = FALSE)
-  setwd(annual_output_dir)
+    file.path(extracts_dir, .)
+  dir.create(year_dir, showWarnings = FALSE)
 
   paste("Loading", basename(path)) %>% report
 
@@ -146,8 +143,9 @@ for (path in data_files) {
 
     # Save the stacked data
     output_path <-
-      substr(dates[1], 1, 4) %>% paste0("SIM2_", ., "-", v, ".tif") %>%
-      file.path(annual_output_dir, .)
+      substr(dates[1], 1, 4) %>%
+      paste0("SIM2_", ., "-", v, ".tif") %>%
+      file.path(year_dir, .)
       paste("    Saving to", output_path) %>% report
     writeRaster(stacked, output_path, overwrite = TRUE)
     # 5 seconds

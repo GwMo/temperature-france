@@ -12,7 +12,6 @@ print("Checking alignement of MODIS products")
 
 # Set directories
 modis_dir <- file.path("~", "data", "modis") %>% path.expand
-setwd(modis_dir)
 
 # Define a function to return all files matching a pattern for the first date of
 # a MODIS product

@@ -19,18 +19,14 @@ library(raster)    # methods to manipulate gridded spatial data
 library(gdalUtils) # extends rgdal and raster to manipulate HDF4 files
                    # (GDAL must have been built with HDF4 support)
 
-# Set directories
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-grid_dir <- file.path(model_dir, "grids") %>% path.expand
-dir.create(grid_dir, recursive = TRUE, showWarnings = FALSE)
-setwd(grid_dir)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
 
 report("Creating a reference grid from MODIS Aqua LST data")
 report("  USE CAUTION if check_modis_alignment script reported misaligned MODIS products")
+
 
 # Find the tiles for the first date with MODIS Aqua LST data
 tiles <-
@@ -80,7 +76,7 @@ report("Masking France")
 mos$mask <- setValues(mos$mask, 1) %>% mask(., france_sinu)
 
 # Save the mosaic as a GeoTIFF for reference
-filename <- "modis_grid_sinusoidal.tif"
+path <- file.path(grids_dir, "modis_grid_sinusoidal.tif")
 paste("Saving mosaic to", filename) %>% report
 writeRaster(mos, filename, overwrite = TRUE)
 
@@ -98,8 +94,9 @@ pts <- pts[, c("id", "row", "col")]
 pts <- spTransform(pts, projection(france_2154))
 
 # Save the spatial points dataframe to an rds file
-filename <- "modis_grid.rds"
+path <- file.path(grids_dir, "modis_grid.rds")
 paste("Saving points to", filename) %>% report
 saveRDS(pts, filename)
+
 
 report("Done")

@@ -13,22 +13,19 @@ library(foreign)  # support for dbf files
 library(raster)   # methods to manipulate gridded spatial data
 library(velox)    # c++ accelerated raster manipulation
 
-data_dir <- file.path("~", "data") %>% path.expand
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-output_dir <- file.path(model_dir, "data")
-dir.create(output_dir, showWarnings = FALSE)
-setwd(output_dir)
+# Set directories and load helper functions
+file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
+file.path(helpers_dir, "report.R") %>% source
+file.path(helpers_dir, "get_ncores.R") %>% source
+file.path(helpers_dir, "parallel_extract.R") %>% source
 
-# Load helper functions
-file.path(model_dir, "helpers", "report.R") %>% source
-file.path(model_dir, "helpers", "get_ncores.R") %>% source
-file.path(model_dir, "helpers", "parallel_extract.R") %>% source
 
 report("Extracting INSEE population")
 
+
 # Load the 1 km square buffers
 report("Loading 1 km square buffers")
-squares <- file.path(model_dir, "buffers", "modis_square_1km.rds") %>% readRDS
+squares <- file.path(buffers_dir, "modis_square_1km.rds") %>% readRDS
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -83,7 +80,7 @@ sum_pop <- function(x) { sum(x, na.rm = TRUE) }
 insee_pop <- parallel_extract(insee_pop, squares, sum_pop, ncores)
 
 # Add the modis grid id, transform to a data frame, and save
-path <- file.path(output_dir, "modis_1km_population.rds")
+path <- file.path(extracts_dir, "modis_1km_population.rds")
 paste("Saving to", path) %>% report
 data.frame(
   "modis_grid_id" = squares$id,
