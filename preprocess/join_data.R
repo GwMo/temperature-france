@@ -2,10 +2,10 @@
 #
 # Load the MODIS reference grid
 # For each year
-# * For each month with data
-#   - Load and properly scale the monthly NDVI data
-#   - Extract the NDVI and QA data by the reference grid points
-#   - Add the MODIS grid id and save
+# * For each month
+#   - Create a template with all grid id - date pairs
+#   - Join each extracted dataset to the template
+#   - Save the template with all the data
 
 library(magrittr) # %>% pipe-like operator
 library(dplyr)    # data manipulation e.g. joining tables
