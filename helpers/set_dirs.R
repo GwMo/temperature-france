@@ -23,7 +23,7 @@ for (subdir in subdirs) {
   dir.create(path, showWarnings = FALSE) # ensure the path exists
   assign(paste0(subdir, "_dir"), path)   # helpers_dir <- path
 }
-rm(subdir, subdirs)
+rm(path, subdir, subdirs)
 
 # Set the working directory to the model dir
 setwd(model_dir)
