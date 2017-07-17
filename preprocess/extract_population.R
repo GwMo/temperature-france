@@ -56,8 +56,12 @@ proj4string(insee_pop) <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210
 gridded(insee_pop) <- TRUE
 insee_pop <- raster(insee_pop)
 
+# Create a directory to store the raster
+disagg_dir <- file.path(extracts_dir, "insee")
+dir.create(disagg_dir, showWarnings = FALSE)
+
 # Save the raster for reference
-path <- file.path(insee_dir, "insee_population_200m.tif")
+path <- file.path(disagg_dir, "insee_population_200m.tif")
 paste("Saving raster to", path) %>% report
 writeRaster(insee_pop, path, overwrite = TRUE)
 
@@ -66,7 +70,7 @@ report("Disaggregating to 50 m")
 insee_pop <- disaggregate(insee_pop, 4) / 16
 
 # Save the disaggregated raster for reference
-path <- file.path(insee_dir, "insee_population_50m.tif")
+path <- file.path(disagg_dir, "insee_population_50m.tif")
 paste("Saving disaggregated raster to", path) %>% report
 writeRaster(insee_pop, path, overwrite = TRUE)
 
