@@ -48,11 +48,10 @@ for (year in 2003:2003) {
     paste("  Processing", month.name[month]) %>% report
 
     # List all dates in the month
-    from_date  <- paste(year, month,     "01", sep = "-") %>% as.Date
-    next_month <- paste(year, month + 1, "01", sep = "-") %>% as.Date
-    to_date <- next_month - 1
+    from_date <- paste(year, month, "01", sep = "-") %>% as.Date
+    to_date <- seq.Date(from_date, by = "month", length.out = 2) %>% last - 1
     dates <- seq.Date(from = from_date, to = to_date, by = 1) %>% as.character
-    rm(from_date, next_month, to_date)
+    rm(from_date, to_date)
 
     # Create a template with all grid id - date pairs and all location data
     report("    Creating template to which data will be joined")
