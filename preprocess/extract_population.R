@@ -74,9 +74,9 @@ writeRaster(insee_pop, path, overwrite = TRUE)
 report("Loading with velox")
 insee_pop <- velox(insee_pop)
 
-# Extract the total population of each 1 km square buffer
+# Extract the rounded total population of each 1 km square buffer
 report("Extracting population")
-sum_pop <- function(x) { sum(x, na.rm = TRUE) }
+sum_pop <- function(x) { sum(x, na.rm = TRUE) %>% round }
 insee_pop <- parallel_extract(insee_pop, squares, sum_pop, ncores)
 
 # Add the modis grid id, transform to a data frame, and save
