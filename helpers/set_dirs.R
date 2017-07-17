@@ -11,17 +11,19 @@ model_dir <- file.path("~", "temperature-france") %>% path.expand
 file.exists(model_dir) %>% stopifnot
 
 # Subdirs within the model dir
-c(
+subdirs <- c(
   "helpers",  # helper scripts
   "grids",    # reference grid points
   "buffers",  # buffers around reference grid points
   "extracts", # extracted data
   "output"    # model output
-) %>% lapply(., function(subdir) {
+)
+for (subdir in subdirs) {
   path <- file.path(model_dir, subdir)   # path <- ~/temperature-france/helpers
   dir.create(path, showWarnings = FALSE) # ensure the path exists
   assign(paste0(subdir, "_dir"), path)   # helpers_dir <- path
-})
+}
+rm(subdir, subdirs)
 
 # Set the working directory to the model dir
 setwd(model_dir)
