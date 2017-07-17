@@ -29,112 +29,52 @@ squares <- file.path(buffers_dir, "modis_square_1km.rds") %>% readRDS
 # Detect the number of cores available
 ncores <- get_ncores()
 
-#############
-# ASTER GDEM2
-#############
+# List the elevation datasets to process
+# Each dataset is pre-mosaiced and clipped to France with a 1 km buffer
+datasets <- list(
+  aster_dem = list(
+    description = "ASTER GDEM2",
+    data_dir = file.path(data_dir, "aster", "gdem2", "france"),
+    filename = "astgtm2_france_dem.tif"
+  ),
+  eu_dem_v10 = list(
+    description = "EU-DEM v1.0",
+    data_dir = file.path(data_dir, "copernicus", "eu-dem", "france"),
+    filename = "eu_dem_v10_france.tif"
+  ),
+  eu_dem_v11 = list(
+    description = "EU-DEM v1.1",
+    data_dir = file.path(data_dir, "copernicus", "eu-dem", "france"),
+    filename = "eu_dem_v11_france.tif"
+  ),
+  aster_dem = list(
+    description = "IGN BDALTI v2 25m",
+    data_dir = file.path(data_dir, "ign", "BDALTI", "france"),
+    filename = "BDALTIV2_25M_FXX_MNT_LAMB93_IGN69.tif"
+  )
+)
 
-report("Extracting ASTER GDEM2 elevation data")
+# Process each elevation dataset
+for (name in names(datasets)) {
+  dataset <- datasets[[name]]
+  paste("Extracting", dataset$description, "elevation data") %>% report
 
-# Load the ASTER GDEM2 elevation data
-# This file has already been mosaiced and clipped to France with a 1 km buffer
-aster_dir <- file.path(data_dir, "aster", "gdem2", "france")
-aster_dem <- file.path(aster_dir, "astgtm2_france_dem.tif") %>% raster
+  # Load the elevation data as a velox object
+  report("  Loading data with velox")
+  vx <- file.path(dataset$data_dir, dataset$filename) %>% raster %>% velox
 
-# Create a velox object from the raster data
-report("  Loading data with velox")
-vx <- velox(aster_dem)
+  # Extract the mean elevation of each buffer and round to nearest integer
+  report("  Extracting elevation")
+  elev <- parallel_extract(vx, squares, fun = mean, ncores = ncores) %>% round
 
-# Extract the mean elevation of each buffer
-report("  Extracting elevation")
-elevation <-
-  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
-  cbind("modis_grid_id" = squares$id, "elevation" = .)
-
-# Add the MODIS grid id, save, and clear memory
-path <- file.path(extracts_dir, "modis_1km_aster_dem.rds")
-paste("  Saving to", path) %>% report
-saveRDS(elevation, path)
-rm(aster_dir, aster_dem, vx, elevation)
-
-#############
-# EU DEM v1.0
-#############
-
-report("Extracting Copernicus EU-DEM v1.0 elevation data")
-
-# Load the Copernicus EU-DEM 1.0 elevation data
-# This file has already been mosaiced and clipped to France with a 1 km buffer
-eu_dem_dir <- file.path(data_dir, "copernicus", "eu-dem", "france")
-eu_dem_v10 <- file.path(eu_dem_dir, "eu_dem_v10_france.tif") %>% raster
-
-# Create a velox object from the raster data
-report("  Loading data with velox")
-vx <- velox(eu_dem_v10)
-
-# Extract the mean elevation of each buffer
-report("  Extracting elevation")
-elevation <-
-  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
-  cbind("modis_grid_id" = squares$id, "elevation" = .)
-
-# Add the MODIS grid id, save, and clear memory
-path <- file.path(extracts_dir, "modis_1km_eu_dem_v10.rds")
-paste("  Saving to", path) %>% report
-saveRDS(elevation, path)
-rm(eu_dem_v10, vx, elevation)
-
-#############
-# EU DEM v1.1
-#############
-
-report("Extracting Copernicus EU-DEM v1.1 elevation data")
-
-# Load the Copernicus EU-DEM 1.1 elevation data
-# This file has already been mosaiced and clipped to France with a 1 km buffer
-eu_dem_v11 <- file.path(eu_dem_dir, "eu_dem_v11_france.tif") %>% raster
-
-# Create a velox object from the raster data
-report("  Loading data with velox")
-vx <- velox(eu_dem_v11)
-
-# Extract the mean elevation of each buffer
-report("  Extracting elevation")
-elevation <-
-  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
-  cbind("modis_grid_id" = squares$id, "elevation" = .)
-
-# Save the result, clear memory, and reset the reference grid
-path <- file.path(extracts_dir, "modis_1km_eu_dem_v11.rds")
-paste("  Saving to", path) %>% report
-saveRDS(elevation, path)
-rm(eu_dem_v11, vx, elevation)
-
-#########
-# IGN DEM
-#########
-
-report("Extracting IGN elevation data")
-
-# Load the IGN BDALTI elevation data
-# This file has already been mosaiced and clipped to France with a 1 km buffer
-ign_dir <- file.path(data_dir, "ign", "BDALTI", "france")
-ign_dem <- file.path(ign_dir, "BDALTIV2_25M_FXX_MNT_LAMB93_IGN69.tif") %>% raster
-
-# Create a velox object from the raster data
-report("  Loading data with velox")
-vx <- velox(ign_dem)
-
-# Extract the mean elevation of each buffer
-report("  Extracting elevation")
-elevation <-
-  parallel_extract(vx, squares, fun = mean, ncores = ncores) %>%
-  cbind("modis_grid_id" = squares$id, "elevation" = .)
-
-# Save the result, clear memory, and reset the reference grid
-path <- file.path(extracts_dir, "modis_1km_ign_dem.rds")
-paste("  Saving to", path) %>% report
-saveRDS(elevation, path)
-rm(ign_dir, ign_dem, vx, elevation)
+  # Add the MODIS grid id, transform to a data frame, and save
+  path <- paste0("modis_1km_", name, ".rds") %>% file.path(extracts_dir, .)
+  paste("  Saving to", path) %>% report
+  data.frame(
+    "modis_grid_id" = squares$id,
+    "elevation" = elev
+  ) %>% saveRDS(., path)
+}
 
 
 report("Done")
