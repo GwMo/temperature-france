@@ -37,7 +37,7 @@ tiles <-
 
 # Load the night LST dataset for each tile and clear the values
 report("Loading MODIS Aqua LST tiles")
-rasters <- sapply(tiles, function(tile) {
+rasters <- lapply(tiles, function(tile) {
   get_subdatasets(tile) %>%         # list the scientific datasets for the tile
   .[grepl("LST_Night_1km$", .)] %>% # select the night LST dataset
   raster %>%                        # load the dataset as a raster
@@ -77,14 +77,18 @@ mos$mask <- setValues(mos$mask, 1) %>% mask(., france_sinu)
 
 # Save the mosaic as a GeoTIFF for reference
 path <- file.path(grids_dir, "modis_grid_sinusoidal.tif")
-paste("Saving mosaic to", filename) %>% report
-writeRaster(mos, filename, overwrite = TRUE)
+paste("Saving mosaic to", path) %>% report
+writeRaster(mos, path, overwrite = TRUE)
 
 # Convert the mosaic cells in France to a spatial points dataframe
 report("Converting to spatial points dataframe")
 pts <- mos[mos$mask == 1] %>% .[, c("x", "y", "row", "col")] %>% as.data.frame
 coordinates(pts) <- ~ x + y
 projection(pts) <- projection(mos)
+
+# Store row and col as integers to save space (raster values are always numeric)
+pts$row <- as.integer(pts$row)
+pts$col <- as.integer(pts$col)
 
 # Assign an id to each cell and reorder the data columns
 pts$id <- 1:nrow(pts)
@@ -95,8 +99,8 @@ pts <- spTransform(pts, projection(france_2154))
 
 # Save the spatial points dataframe to an rds file
 path <- file.path(grids_dir, "modis_grid.rds")
-paste("Saving points to", filename) %>% report
-saveRDS(pts, filename)
+paste("Saving points to", path) %>% report
+saveRDS(pts, path)
 
 
 report("Done")
