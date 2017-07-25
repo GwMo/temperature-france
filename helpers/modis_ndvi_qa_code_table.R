@@ -32,6 +32,9 @@ modis_ndvi_qa_code_table <- function() {
   qa_codes$usefulness[qa_codes$bit5 == 1 & qa_codes$bit4 == 1 & qa_codes$bit3 == 1 & qa_codes$bit2 == 0] <- NA
   qa_codes$usefulness[qa_codes$bit5 == 1 & qa_codes$bit4 == 1 & qa_codes$bit3 == 1 & qa_codes$bit2 == 1] <- NA
 
+  # Store usefulness as an integer to reduce filesize of extracted data
+  qa_codes$usefulness <- as.integer(qa_codes$usefulness)
+
   # QA bits 6-15 not currently used
 
   # Clear the usefulness of pixels that were not produced

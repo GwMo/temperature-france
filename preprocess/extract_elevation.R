@@ -72,7 +72,7 @@ for (name in names(datasets)) {
   paste("  Saving to", path) %>% report
   data.frame(
     "modis_grid_id" = squares$id,
-    "elevation" = elev
+    "elevation" = as.integer(elev)
   ) %>% saveRDS(., path)
 }
 

@@ -88,7 +88,7 @@ path <- file.path(extracts_dir, "modis_1km_population.rds")
 paste("Saving to", path) %>% report
 data.frame(
   "modis_grid_id" = squares$id,
-  "population" = insee_pop
+  "population" = as.integer(insee_pop)
 ) %>% saveRDS(., path)
 
 report("Done")
