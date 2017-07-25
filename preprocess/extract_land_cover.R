@@ -65,8 +65,8 @@ for (year in c(2000, 2006, 2012)) {
 
   # Load the raster data for the year
   # This file has already been mosaiced and clipped to France with a 1 km buffer
-  filename <- paste("clc", year, "france.tif", sep = "_")
-  clc_data <- file.path(clc_dir, filename) %>% raster
+  clc_data <-
+    paste0("clc_", year, "_france.tif") %>% file.path(clc_dir, .) %>% raster
 
   # Disaggregate the data from 100 m to 50 m
   report("  Disaggregating to 50 m")
