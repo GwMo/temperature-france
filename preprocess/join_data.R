@@ -35,7 +35,7 @@ rm(grid_4326, epsg_4326)
 joined_dir <- file.path(extracts_dir, "joined")
 dir.create(joined_dir, showWarnings = FALSE)
 
-# Iterate over all model years
+# FIXME TODO Iterate over all model years
 for (year in 2003:2003) {
   paste("Processing", year) %>% report
 
@@ -60,54 +60,50 @@ for (year in 2003:2003) {
       "date" = dates,
       stringsAsFactors = FALSE
     ) %>% left_join(., as.data.frame(grid), by = c("modis_grid_id" = "id"))
-    # 24 seconds
-    # 1.17 GB
-    # Entire year takes 192 seconds and is 13.7 GB
+    # 23 seconds
+    # 1.01 GB
+    # Entire year takes 170 seconds and is 11.9 GB
 
     ################
     # Join MODIS LST
     ################
-    tmp_dir <- file.path(extracts_dir, "modis", year)
     for (sat in c("aqua", "terra")) {
-      for(tod in c("day", "night")) {
-        paste("    Joining MODIS", sat, tod, "LST") %>% report
+      paste("    Joining MODIS", sat, "LST") %>% report
 
-        # Load the extracted LST data
-        tmp <-
-          paste0("modis_grid_", sat, "_lst_", tod, "_", year, "-%02d.fst") %>%
-          sprintf(., month) %>%
-          file.path(tmp_dir, .) %>%
-          read.fst
+      # Load the extracted LST data
+      tmp <-
+        paste0("modis_grid_", sat, "_lst_", year, "-%02d.fst") %>%
+        sprintf(., month) %>%
+        file.path(extracts_dir, "modis", year, .) %>%
+        read.fst
 
-        # Prefix the data columns with the satellite and time of day
-        names(tmp) <-
-          paste(sat, tod, "lst", sep = "_") %>%
-          gsub("^lst", ., names(tmp))
+      # Prefix the data columns with the satellite
+      names(tmp) <-
+        paste0(sat, "_") %>%
+        gsub("^(?!modis_grid_id$|date$)", ., names(tmp), perl = TRUE)
 
-        # Add the data to the template
-        # If the grid ids and dates match then we can cbind the data columns to
-        # the template; otherwise we have to join them
-        if (
-          all(tmp$modis_grid_id == template$modis_grid_id) &&
-          all(tmp$date == template$date)
-        ) {
-          template <-
-            select(tmp, -c(modis_grid_id, date)) %>%
-            cbind(template, .)
-        } else {
-          template <- left_join(template, tmp, by = c("modis_grid_id", "date"))
-        }
-        rm(tmp)
+      # Add the data to the template
+      # If the grid ids and dates match then we can cbind the data columns to
+      # the template; otherwise we have to join them
+      if (
+        all(tmp$modis_grid_id == template$modis_grid_id) &&
+        all(tmp$date == template$date)
+      ) {
+        template <-
+          select(tmp, -c(modis_grid_id, date)) %>%
+          cbind(template, .)
+      } else {
+        template <- template[tmp, on = c("modis_grid_id", "date")]
       }
+      rm(tmp)
     }
-    rm(tmp_dir, sat, tod)
-    # 8 seconds per join -> 32 seconds
-    # Adds 311 MB per join -> 2.41 GB
+    rm(sat)
+    # 10 seconds per satellite -> 20 seconds
+    # Adds 1.09 GB per satellite -> 3.19 GB
 
     #################
     # Join MODIS NDVI
     #################
-    tmp_dir <- file.path(extracts_dir, "modis", year)
     for (sat in c("aqua", "terra")) {
       paste("    Joining MODIS", sat, "NDVI") %>% report
 
@@ -115,7 +111,7 @@ for (year in 2003:2003) {
       tmp <-
         paste0("modis_grid_", sat, "_ndvi_", year, "-%02d.rds") %>%
         sprintf(., month) %>%
-        file.path(tmp_dir, .) %>%
+        file.path(extracts_dir, "modis", year, .) %>%
         readRDS
 
       # Drop the date column (NDVI data is monthly)
@@ -128,9 +124,9 @@ for (year in 2003:2003) {
       template <- left_join(template, tmp, by = "modis_grid_id")
       rm(tmp)
     }
-    rm(tmp_dir, sat)
-    # 27 seconds per join -> 54 seconds
-    # Adds 311 MB per join -> 3.04 GB
+    rm(sat)
+    # 22 seconds per satellite -> 44 seconds
+    # Adds 234 MB per satellite -> 3.66 GB
 
     ############################################
     # Join Meteo France SIM surface model output
@@ -165,7 +161,7 @@ for (year in 2003:2003) {
       rm(tmp)
     }
     # 7 seconds
-    # Adds 1.4 GB -> 4.44 GB
+    # Adds 1.4 GB -> 5.06 GB
 
     ################
     # Join Elevation
@@ -184,7 +180,7 @@ for (year in 2003:2003) {
       rm(tmp)
     }
     # 32 seconds
-    # Adds 156 MB -> 4.59 GB
+    # Adds 77.8 MB -> 5.14 GB
 
     #################
     # Join Land Cover
@@ -216,7 +212,7 @@ for (year in 2003:2003) {
       rm(tmp, clc_year)
     }
     # 38 seconds
-    # Adds 2.34 GB -> 6.93 GB
+    # Adds 2.34 GB -> 7.48 GB
 
     #################
     # Join Population
@@ -235,6 +231,7 @@ for (year in 2003:2003) {
       rm(tmp)
     }
     # 38 seconds
+    # Adds 77.8 MB -> 7.56 GB
     # Adds 156 MB -> 7.08 GB
 
     # Save the joined data in rds format
