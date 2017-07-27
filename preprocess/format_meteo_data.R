@@ -82,21 +82,20 @@ for (year in 2000:2016) {
     station_data
   }, mc.cores = ncores) %>% do.call(rbind, .) %>% as.data.frame
 
-  # Confirm that each station has a single latitude and longitude and no more
-  # than one set of observations per date
-  report("  Checking for duplicates")
-  obs_checks <-
+  # Ensure that each station has only one set of observations per date
+  report("  Checking for duplicate or out-of-period observations")
+  dup_check <-
     group_by(obs, insee_id) %>%
     summarise(
-      lats = length(unique(latitude)),  # unique latitudes per station
-      lons = length(unique(longitude)), # unique longitudes per station
-      days = length(unique(date)),      # unique dates per station
-      rows = length(date)               # rows of data per station
+      days = length(unique(date)),
+      rows = length(date)
     )
-  all(obs_checks$lats == 1)               %>% stopifnot
-  all(obs_checks$lons == 1)               %>% stopifnot
-  all(obs_checks$days == obs_checks$rows) %>% stopifnot
-  rm(obs_checks)
+  all(dup_check$days == dup_check$rows) %>% stopifnot
+  rm(dup_check)
+
+  # Ensure that all observations fall within the data year
+  stopifnot(paste0(year, "-01-01") <= min(obs$date))
+  stopifnot(paste0(year, "-12-31") >= max(obs$date))
 
   # FIXME TODO add station type (after resolving disagreement between alternate
   # sources of station type)
