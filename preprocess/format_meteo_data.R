@@ -80,7 +80,7 @@ for (year in 2000:2016) {
 
     # Return the parsed data
     station_data
-  }, mc.cores = ncores) %>% do.call(rbind, .) %>% as.data.frame
+  }, mc.cores = ncores) %>% do.call(rbind.data.frame, .)
 
   # Ensure that each station has only one set of observations per date
   report("  Checking for duplicate or out-of-period observations")

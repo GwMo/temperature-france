@@ -76,7 +76,7 @@ for (year_dir in list.dirs(sim_dir, recursive = FALSE)) {
     mclapply(1:max(groups), function(i) {
       spTransform(grid[groups == i, 1], proj4string(sim_data)) %>%
       extract(sim_data, .)
-    }, mc.cores = ncores) %>% do.call(rbind, .) %>% as.data.frame
+    }, mc.cores = ncores) %>% do.call(rbind.data.frame, .)
   })
   names(extracted) <- variables
   # 20 cores

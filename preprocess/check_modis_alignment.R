@@ -75,9 +75,7 @@ terra_lst_vs_ndvi <- difference(rasters$terra_lst, rasters$terra_ndvi)
 print(terra_lst_vs_ndvi)
 
 # Combine the differences into a data frame
-diffs <-
-  rbind(lst_vs_lst, ndvi_vs_ndvi, aqua_lst_vs_ndvi, terra_lst_vs_ndvi) %>%
-  as.data.frame
+diffs <- rbind.data.frame(lst_vs_lst, ndvi_vs_ndvi, aqua_lst_vs_ndvi, terra_lst_vs_ndvi)
 
 # If the rasters are aligned to within 1 mm, use the aqua lst grid as the reference
 if (max(diffs$coordinates) < 0.001) {

@@ -4,7 +4,7 @@ modis_ndvi_qa_code_table <- function() {
   # List all possible QA codes and their 16-bit big-endian binary notation
   qa_codes <- lapply(0:65535, function(val) {
     intToBits(val) %>% as.integer %>% .[16:1] %>% c(val, .)
-  }) %>% do.call(rbind, .) %>% as.data.frame
+  }) %>% do.call(rbind.data.frame, .)
   names(qa_codes) <- paste0("bit", 15:0) %>% c("code", .)
 
   # Label the overall quality indicated by the QA bit values

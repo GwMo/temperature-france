@@ -4,7 +4,7 @@ modis_lst_qa_code_table <- function() {
   # List all possible QA codes and their 8-bit big-endian binary notation
   qa_codes <- lapply(0:255, function(val) {
     intToBits(val) %>% as.integer %>% .[8:1] %>% c(val, .)
-  }) %>% do.call(rbind, .) %>% as.data.frame
+  }) %>% do.call(rbind.data.frame, .)
   names(qa_codes) <- paste0("bit", 7:0) %>% c("code", .)
 
   # Label the overall quality indicated by the QA bit values
