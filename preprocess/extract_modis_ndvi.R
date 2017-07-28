@@ -61,7 +61,7 @@ for(satellite in c("aqua", "terra")) {
     d <- basename(date_dir) %>% as.Date
 
     # Create a directory to hold the extracted data
-    year_dir <- format(d, "%Y") %>% file.path(extracts_dir, .)
+    year_dir <- format(d, "%Y") %>% file.path(extracts_dir, "modis", .)
     dir.create(year_dir, showWarnings = FALSE)
 
     format(d, "%Y-%m") %>%
