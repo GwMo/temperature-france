@@ -47,7 +47,7 @@ datasets <- list(
     data_dir = file.path(data_dir, "copernicus", "eu-dem", "france"),
     filename = "eu_dem_v11_france.tif"
   ),
-  aster_dem = list(
+  ign_bdalti = list(
     description = "IGN BDALTI v2 25m",
     data_dir = file.path(data_dir, "ign", "BDALTI", "france"),
     filename = "BDALTIV2_25M_FXX_MNT_LAMB93_IGN69.tif"
