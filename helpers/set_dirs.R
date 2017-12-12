@@ -1,29 +1,24 @@
-# Define and ensure the presence of key directories
+# Set project directories
 
-library(magrittr)
+# Base directory
+if (.Platform$OS.type == "windows") {
+  base_dir <- file.path("P:/")
+} else {
+  base_dir <- path.expand(file.path("~/P055.Ian"))
+}
+stopifnot(file.exists(base_dir))
 
 # Source data
-data_dir <- file.path("~", "data") %>% path.expand
-file.exists(data_dir) %>% stopifnot
+data_dir <- file.path(base_dir, "data")
+stopifnot(file.exists(data_dir))
 
-# Model scripts, extracted data, and output
-model_dir <- file.path("~", "temperature-france") %>% path.expand
-file.exists(model_dir) %>% stopifnot
+# Model code
+model_dir <- file.path(base_dir, "temperature-france")
+stopifnot(file.exists(model_dir))
 
-# Subdirs within the model dir
-subdirs <- c(
-  "helpers",  # helper scripts
-  "grids",    # reference grid points
-  "buffers",  # buffers around reference grid points
-  "extracts", # extracted data
-  "output"    # model output
-)
-for (subdir in subdirs) {
-  path <- file.path(model_dir, subdir)   # path <- ~/temperature-france/helpers
-  dir.create(path, showWarnings = FALSE) # ensure the path exists
-  assign(paste0(subdir, "_dir"), path)   # helpers_dir <- path
-}
-rm(path, subdir, subdirs)
+# Model output
+output_dir <- file.path(data_dir, "temperature-france-output")
+dir.create(output_dir, showWarnings = FALSE)
 
-# Set the working directory to the model dir
+# Working directory
 setwd(model_dir)
