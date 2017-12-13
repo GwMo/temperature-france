@@ -118,9 +118,9 @@ report("Adding elevation")
 # Extract unique observation locations and transform to SpatialPoints
 obs_pts <-
   obs %>%
-  distinct(latitude, longitude) %>%
   dplyr::select(longitude, latitude) %>% # SpatialPoints needs coords as Easting, Northing
-  SpatialPoints(proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
+  distinct %>%
+  SpatialPoints(proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
 
 # Load the Copernicus EU-DEM v1.1 elevation data
 elevation <-
@@ -129,8 +129,8 @@ elevation <-
 
 # Extract elevation for each observation location
 obs_pts$elevation <-
-  spTransform(obs_pts, crs(elevation)) %>% # project to match elevation data
-  raster::extract(elevation, .)            # 40 seconds; velox is much slower
+  spTransform(obs_pts, projection(elevation)) %>% # project to match elevation data
+  raster::extract(elevation, .)                   # 40 seconds; velox is much slower
 
 # Add elevation to the observations data frame
 obs$elevation <- left_join(
@@ -152,7 +152,7 @@ obs_pts <-
   obs %>%
   distinct(latitude, longitude) %>%
   dplyr::select(longitude, latitude) %>% # SpatialPoints needs coords as Easting, Northing
-  SpatialPoints(proj4string = crs("+proj=longlat +datum=WGS84 +no_defs"))
+  SpatialPoints(proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
 
 # Flag locations as inside or outside study area
 study_area <-
@@ -237,8 +237,6 @@ obs_tally <- tally_and_report(obs_tally)
 # Cleanup
 obs %<>% select(-station_obs_this_month)
 rm(description)
-
-
 
 
 # Save the removed and the clean data -----------------------------------------
