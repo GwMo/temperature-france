@@ -1,4 +1,8 @@
-# Display a message with a timestamp
+# Display a message with a timestamp and also write it to the logfile, if one exists
 report <- function(msg) {
-  paste(Sys.time(), msg, sep = ": ") %>% message
+  txt <- paste(Sys.time(), msg, sep = ": ")
+  message(txt)
+  if (exists("constants") && !is.null(constants$logfile)) {
+    write(txt, constants$logfile, append = TRUE)
+  }
 }

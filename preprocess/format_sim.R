@@ -12,14 +12,14 @@ library(data.table) # fast loading of data files
 library(sp)         # classes and methods for spatial data
 library(raster)     # methods to manipulate gridded spatial data
 
-# Set directories and load helper functions
-file.path("~", "temperature-france", "helpers", "set_dirs.R") %>% source
-file.path(helpers_dir, "report.R") %>% source
-file.path(helpers_dir, "get_ncores.R") %>% source
+# Load helper functions
+source("helpers/constants.R")
+source("helpers/report.R")
+source("helpers/get_ncores.R")
 
-
+report("")
 report("Formatting Meteo France SIM surface model output")
-
+report("---")
 
 # Detect the number of cores available
 ncores <- get_ncores()
@@ -28,131 +28,123 @@ ncores <- get_ncores()
 # METEO FRANCE SIM SURFACE MODEL
 ################################
 
-sim_dir <- file.path(data_dir, "meteo_france", "sim")
+# Create a directory to store the formatted data
+processed_dir <- file.path(constants$work_dir, "meteo_france", "sim")
+dir.create(processed_dir, showWarnings = FALSE)
 
-metadata <- file.path(sim_dir, "file_format.csv") %>% read.csv(., as.is = TRUE)
-data_files <-
-  file.path(sim_dir, "annual") %>%
-  list.files(., full.names = TRUE, pattern = "^SIM2_\\d{4}\\.csv$")
+# List the annual SIM data files and load the metadata file
+sim_dir <- file.path(constants$data_dir, "meteo_france", "sim")
+data_files <- list.files(sim_dir, full.names = TRUE, pattern = "^SIM2_\\d{4}_\\d{4,6}\\.csv$")
+metadata <- file.path(sim_dir, "sim2_file_format.csv") %>% read.csv(., as.is = TRUE)
 
-# Process the annual SIM model output files
-for (path in data_files) {
-  # Create a directory to store the formatted data
-  year_dir <-
-    basename(path) %>%
-    gsub("SIM2_(\\d{4})\\.csv", "\\1", .) %>%
-    file.path(extracts_dir, .)
-  dir.create(year_dir, showWarnings = FALSE)
+# List the variables we want
+vars <- c(
+  "temperature_min",
+  "temperature_mean",
+  "temperature_max",
+  "humidity_specific",
+  "humidity_relative",
+  "precip_liquid",
+  "precip_solid",
+  "wind_speed"
+)
 
-  paste("Loading", basename(path)) %>% report
+# List the columns we want (coordinates + date + vars) and look up their actual column names
+long_names <- c("x", "y", "date", vars)
+select_cols <- match(long_names, metadata$longname) %>% metadata$colname[.]
 
-  # Look up column classes from the metadata based on the data file header row
-  col_classes <-
-    fread(path, header = FALSE, nrow = 1) %>%
-    match(metadata$colname, .) %>%
-    metadata$coltype[.]
+# Process the raw SIM data files
+for (sim_path in data_files) {
+  paste("Loading", basename(sim_path)) %>% report
 
-  # List the columns we want
-  select_cols <- c(
-    "LAMBX",
-    "LAMBY",
-    "DATE",
-    "PRENEI_Q",
-    "PRELIQ_Q",
-    "T_Q",
-    "TINF_H_Q",
-    "TSUP_H_Q",
-    "FF_Q",
-    "Q_Q",
-    "HU_Q",
-    "RESR_NEIGE_Q"
-  )
+  # Read the data header and look up column classes from the metadata
+  header <- fread(sim_path, header = FALSE, nrow = 1) %>% as.character
+  col_classes <- match(header, metadata$colname) %>% metadata$coltype[.]
 
-  # Read the data - parallelization does not improve performance
-  sim_data <- fread(path, colClasses = col_classes, select = select_cols)
-  # 10 seconds
-  # 319 MB
+  # Read the data and set friendly column names
+  sim <- fread(sim_path, colClasses = col_classes, select = select_cols, col.names = long_names)
 
-  # Rename columns
-  names(sim_data) <- c(
-    "x",
-    "y",
-    "date",
-    "precip_solid",
-    "precip_liquid",
-    "temperature_mean",
-    "temperature_min",
-    "temperature_max",
-    "wind_speed",
-    "humidity_specific",
-    "humidity_relative",
-    "snowpack_water_equiv"
-  )
+  # Convert coordinates to metres
+  report("  Converting coordinates from hectometres to metres")
+  sim[, x := x * 100] # hectometres -> metres
+  sim[, y := y * 100] # hectometres -> metres
 
-  # Perform some conversions
-  sim_data$x <- sim_data$x * 100 # hectometres -> metres
-  sim_data$y <- sim_data$y * 100 # hectometres -> metres
-  sim_data$date <- as.Date(sim_data$date, "%Y%m%d")
-  # 348 MB
+  # Split the data by year
+  report("  Splitting by year")
+  year_splits <- split(sim, substr(sim$date, 1, 4))
+  rm(sim) # remove the unsplit data from memory
 
-  report("  Transforming to SpatialPixelsDataFrame")
+  # Process the data for each year
+  for (year in names(year_splits)) {
+    paste("  Processing", year) %>% report
 
-  # Transform to a SpatialPointsDataFrame
-  coordinates(sim_data) <- ~ x + y
-  # 10 seconds
-  # 550 MB
+    # For each variable, create and save a RasterStack with a layer for each date
+    # The most efficient way to do this is to create a RasterStack for each date containing the data
+    # for all variables, then for each variable take the appropriate layer from each RasterStack
+    report("    Converting to RasterStacks")
 
-  # Set the projection
-  # The SIM model uses the NTF Lambert II étendu projection which is based on
-  # the deprecated NTF geodetic system. In theory Lambert II étendu corresponds
-  # to EPSG:27572, but in fact it differs by up to 5 m. It is essentially the
-  # same as ESRI:102582 (differs by < 1 m). The best way to transform is using
-  # the IGN-provided NTF to RGF93 shift grid ntf_r93.gsb - for details see
-  # https://grasswiki.osgeo.org/wiki/IGNF_register_and_shift_grid_NTF-RGF93
-  proj4string(sim_data) <- "+proj=lcc +nadgrids=ntf_r93.gsb,null +lat_1=46.8 +lat_0=46.8 +lon_0=0 +k_0=0.99987742 +x_0=600000 +y_0=2200000 +a=6378249.2 +b=6356515 +towgs84=-168,-60,320,0,0,0,0 +pm=paris +units=m +no_defs"
+    # Split the dataset by date, and for each date create a RasterStack with one layer per variable
+    # See note in helpers/constants.R about Lambert II étendu projection
+    # -> 365 RasterStacks, each with length(vars) layers
+    stacks <-
+      year_splits[[year]] %>%           # get the data for the year
+      split(., .$date) %>%              # split by date
+      mclapply(function(slice, proj4) { # for each date
+        coordinates(slice) <- ~ x + y   #   make a SpatialPointsDataFrame
+        proj4string(slice) <- proj4     #   set the projection
+        gridded(slice) <- TRUE          #   convert to SpatialPixelsDataFrame
+        stack(slice)                    #   convert to RasterStack
+      }, mc.cores = ncores, proj4 = constants$lambert_etendu)
+    year_splits[[year]] <- NULL         # remove the data from memory
 
-  # Tranform to a SpatialPixelsDataFrame
-  gridded(sim_data) <- TRUE
-  # 5 seconds
-  # 565 MB
+    # For each variable, create a RasterStack with one layer for each day and save as a tif
+    # -> length(vars) tif files, each with 365 layers
+    paste("    Saving to", processed_dir) %>% report
+    for (v in vars) {
+      stck <- lapply(stacks, function(stck) { # for each RasterStack (all data for one date)
+        subset(stck, v)                       #   get the layer with data for the variable
+      }) %>% stack                            # stack the 365 layers
 
-  # Identify the columns that contain variables
-  variables <- names(sim_data)[!(names(sim_data) %in% c("x", "y", "date"))]
-
-  # List all dates contained in the data
-  dates <-
-    seq.Date(from = min(sim_data$date), to = max(sim_data$date), by = 1) %>%
-    as.character
-
-  # Create a raster stack for each variable containing data for all dates
-  report("  Rasterizing")
-  lapply(variables, function(v) {
-    paste("    Stacking dates for", v) %>% report
-
-    # Stacking the layers in parallel requires a lot of memory, and if there is
-    # not enough some of the threads will be killed resulting in NULL values in
-    # the list that is returned, which results in an error when stacking:
-    #   Error in stack.default(NULL, NULL, <S4 object of class "RasterLayer">, :
-    #     at least one vector element is required
-    stacked <- mclapply(dates, function(d) {
-      layer <- sim_data[sim_data$date == d, v] %>% raster
-      names(layer) <- d
-      layer
-    }, mc.cores = ncores) %>% do.call(stack, .)
-    # 25 seconds
-
-    # Save the stacked data
-    output_path <-
-      substr(dates[1], 1, 4) %>%
-      paste0("SIM2_", ., "-", v, ".tif") %>%
-      file.path(year_dir, .)
-      paste("    Saving to", output_path) %>% report
-    writeRaster(stacked, output_path, overwrite = TRUE)
-    # 5 seconds
-  })
-
-  # Clear memory
-  rm(sim_data)
+      # Save as a tif file
+      path <- paste0("SIM2_", year, "-", v, ".tif") %>% file.path(processed_dir, .)
+      paste0("      ", basename(path)) %>% report
+      writeRaster(stck, path, overwrite = TRUE)
+      rm(stck)
+    }
+    rm(stacks)
+  }
 }
 
 report("Done")
+
+
+# library(ncdf4)
+#
+# FIXME TODO need to reverse and transform raster data before saving as netCDF?
+#
+# test <- stacks[[3]]
+# v <- vars[3]
+# nc_x <- ncdim_def(name = "easting", units = "metre", vals = unique(coordinates(test)[, "x"]))
+# nc_y <- ncdim_def(name = "northing", units = "metre", vals = unique(coordinates(test)[, "y"]))
+# nc_z <- ncdim_def(
+#   name = "date",
+#   units = "days since 1970-01-01",
+#   vals = names(test) %>% as.Date("X%Y%m%d") %>% as.integer,
+#   unlim = TRUE,
+#   calendar = "gregorian"
+# )
+# # nc_vars <- lapply(vars, function(v) {
+# nc_v <-
+#   ncvar_def(
+#     name = v,
+#     units = "degC",
+#     dim = list(nc_x, nc_y, nc_z)
+#   )
+# # })
+# nc_out <- nc_create("../test.nc", vars = nc_v, force_v4 = TRUE)
+# # lapply(vars, function(v) {
+# ncvar_put(nc_out, nc_v, as.array(stacks[[v]]), verbose = TRUE)
+# # })
+# ncatt_put(nc_out, 0, "proj4string", etendu, prec = "text")
+# ncatt_put(nc_out, 0, "crs_format", "PROJ.4", prec = "text")
+# nc_close(nc_out)

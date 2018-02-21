@@ -5,10 +5,13 @@ library(dplyr)    # data manipulation e.g. joining tables
 library(parallel) # parallel computation
 
 # Load helper functions
+source("helpers/constants.R")
 source("helpers/report.R")
 source("helpers/get_ncores.R")
 
+report("")
 report("Parsing Meteo France station data")
+report("---")
 
 # Function to parse latitude and longitude from the data files
 # The files contain DDMMSS without leading zeros (e.g. -01°30'36" is stored as -13036)
@@ -27,17 +30,17 @@ ddmmss_to_decimal <- function(ddmmss_as_integer) {
 }
 
 # Create a directory to hold the parsed data
-parsed_dir <- file.path(output_dir, "data_extracts", "meteo_france", "observations", "parsed")
+parsed_dir <- file.path(constants$work_dir, "meteo_france", "observations", "parsed")
 dir.create(parsed_dir, recursive = TRUE, showWarnings = FALSE)
 
 # The directories containing the raw data (which is grouped by region)
 region_dirs <-
-  file.path(data_dir, "meteo_france", "observations") %>%
+  file.path(constants$data_dir, "meteo_france", "observations") %>%
   list.files(., pattern = "region\\d", full.names = TRUE)
 
 # Load the data file layout
 layout <-
-  file.path(data_dir, "meteo_france", "observations", "data_file_layout.csv") %>%
+  file.path(constants$data_dir, "meteo_france", "observations", "meteo_obs_file_layout.csv") %>%
   read.csv(., as.is = TRUE)
 
 # Set the number of cores to use for parallel computation
@@ -72,7 +75,7 @@ for (year in 2000:2016) {
     station_data$longitude <- ddmmss_to_decimal(station_data$longitude)
 
     # Parse the date
-    station_data$date <- as.Date(station_data$date, "%d%m%Y")
+    station_data$date <- as.Date(station_data$date, "%d%m%Y") %>% format("%Y-%m-%d")
 
     # Return the parsed data
     station_data
@@ -99,10 +102,7 @@ for (year in 2000:2016) {
   saveRDS(obs, path)
 
   # Cleanup
-  rm(obs, path, year)
+  rm(obs)
 }
-
-# Cleanup
-rm(ddmmss_to_decimal, parsed_dir, region_dirs, layout, ncores)
 
 report("Done")

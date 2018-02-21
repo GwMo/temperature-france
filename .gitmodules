@@ -1,0 +1,3 @@
+[submodule "data_management/landsat/espa-bulk-downloader"]
+	path = data_management/landsat/espa-bulk-downloader
+	url = git@github.com:ihough/espa-bulk-downloader.git

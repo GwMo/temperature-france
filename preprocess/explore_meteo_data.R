@@ -1,35 +1,35 @@
 # Explore the Meteo France station data ---------------------------------------
 
-library(magrittr) # %>% pipe-like operator
-library(parallel) # parallel computation
-library(sp)       # classes and methods for spatial data
-library(rgdal)    # wrapper for GDAL and proj.4 to translate spatial data
-library(rgeos)    # wrapper for GEOS to manipulate vector data
-library(dplyr)    # data manipulation e.g. joining tables
-library(tidyr)    # data tidying
-library(ggplot2)  # plotting
+library(magrittr)   # %>% pipe-like operator
+library(parallel)   # parallel computation
+library(sp)         # classes and methods for spatial data
+library(rgdal)      # wrapper for GDAL and proj.4 to translate spatial data
+library(rgeos)      # wrapper for GEOS to manipulate vector data
+library(dplyr)      # data manipulation e.g. joining tables
+library(tidyr)      # data tidying
+library(ggplot2)    # plotting
+library(data.table) # fast data manipulation
 
-# library(mapview)    # interactive maps
-# library(data.table) # between function
-# library(cowplot)    # aligning multiple plots
+# library(mapview)  # interactive maps
+# library(cowplot)  # aligning multiple plots
 # library(plotly)   # interactive plots
 
 # Load helper functions
-source("helpers/set_dirs.R")
 source("helpers/constants.R")
 source("helpers/report.R")
 source("helpers/get_ncores.R")
 
+report("")
 report("Exploring clean Meteo France station data")
-
+report("---")
 
 # Setup -----------------------------------------------------------------------
 
 # Number of cores to use for parallel computation
-ncores <- length(model_years) + 1 %>% min(., get_ncores())
+ncores <- length(constants$model_years) + 1 %>% min(., get_ncores())
 
 # Create a directory to hold visualizations
-vis_dir <- file.path(output_dir, "visualizations")
+vis_dir <- file.path(constants$work_dir, "meteo_france", "observations", "vis")
 dir.create(vis_dir, showWarnings = FALSE)
 
 # Function definitions --------------------------------------------------------
@@ -63,11 +63,17 @@ group_and_summarize <- function(df, group_cols, vars) {
 
 # Load cleaned observations ---------------------------------------------
 
-paste("Loading observations for", first(model_years), "to", last(model_years)) %>% report
-clean_dir <- file.path(output_dir, "data_extracts", "meteo_france", "observations", "clean")
-obs <- mclapply(model_years, function(year) {
-  paste0("meteo_data_", year, "-clean.rds") %>% file.path(clean_dir, .) %>% readRDS
-}, mc.cores = ncores) %>% do.call(rbind, .)
+paste(
+  "Loading observations for",
+  dplyr::first(constants$model_years),
+  "to",
+  dplyr::last(constants$model_years)
+) %>% report
+clean_dir <- file.path(constants$work_dir, "meteo_france", "observations", "clean")
+obs <- mclapply(constants$model_years, function(year) {
+  x <- paste0("meteo_data_", year, "-clean.rds") %>% file.path(clean_dir, .) %>% readRDS
+  x[, date := as.Date(date)]
+}, mc.cores = ncores) %>% rbindlist
 rm(clean_dir)
 
 
@@ -134,7 +140,7 @@ report("  Daily temperatures")
 # Assemble the data
 lhs <-
   smry_by_date %>%
-  select(variable, date, min, mean, max) %>%
+  dplyr::select(variable, date, min, mean, max) %>%
   mutate(
     "year" = format.Date(date, "%Y") %>% as.integer,
     "month" = format.Date(date, "%m") %>% as.integer
@@ -143,7 +149,7 @@ join_cols <- c("variable", "year", "month")
 normals_cols <- c("mean", "sd", "median", "iqr")
 rhs <-
   smry_by_year_month %>%
-  select(c(join_cols, normals_cols))
+  dplyr::select(c(join_cols, normals_cols))
 names(rhs) <- paste0("normal.", normals_cols) %>% c(join_cols, .)
 plot_data <- left_join(lhs, rhs, by = join_cols)
 
@@ -251,8 +257,8 @@ p <-
     geom_histogram(binwidth = 365) +
     scale_x_continuous(
       breaks = seq.Date(
-        from = min(model_years) %>% paste0("-01-01") %>% as.Date,
-        to =   max(model_years) %>% paste0("-12-31") %>% as.Date,
+        from = min(constants$model_years) %>% paste0("-01-01") %>% as.Date,
+        to =   max(constants$model_years) %>% paste0("-12-31") %>% as.Date,
         by = 1
       ) %>% format.Date("%Y") %>% table %>% as.numeric %>% cumsum %>% c(0, .),
       name = "Days with data"
@@ -372,10 +378,77 @@ rm(p)
 # Explore data ----------------------------------------------------------------
 
 # Columns of interest
-explore_cols <- c("insee_id", "latitude", "longitude", "elevation", "station_type", "year", "month",
-                  "doy", "date", var_names)
+explore_cols <- c("insee_id", "latitude", "longitude", "station_elevation", "station_type", "year",
+                  "month", "doy", "date", var_names)
 
-## 1. Outliers (compared to mean for year + month) ----------------------------
+## 1. Co-located observations
+
+obs_t <- as.data.table(obs)
+
+# Select observations from stations that have the same location as another station
+colocated <-
+  obs_t[, .N, by = c("date", "latitude", "longitude")] %>%
+  .[N > 1, ] %>%
+  obs_t[., on = c("date", "latitude", "longitude")]
+
+# For each location and date, identify the lowest station type (should be highest quality)
+colocated[
+  ,
+  "best_station_type" := levels(.SD$station_type)[min(as.integer(.SD$station_type))],
+  by = c("date", "latitude", "longitude")
+]
+
+# Calculate the difference between the observations for each location date
+diffs <-
+  colocated[
+    ,
+    list(
+      "n" = .N,
+      "types" = paste(.SD$station_type, collapse = ","),
+      "elev_diff" = max(.SD$station_elevation) - min(.SD$station_elevation),
+      "tmin_diff"  = max(.SD$temperature_min, na.rm = TRUE) - min(.SD$temperature_min,  na.rm = TRUE),
+      "tmean_diff"  = max(.SD$temperature_mean, na.rm = TRUE) - min(.SD$temperature_mean,  na.rm = TRUE),
+      "tmax_diff"  = max(.SD$temperature_max, na.rm = TRUE) - min(.SD$temperature_max,  na.rm = TRUE)
+    ),
+    by = c("date", "latitude", "longitude")
+  ]
+
+# For each location, get the maximum discrepancy between observations
+max_diffs <-
+  diffs[
+    ,
+    lapply(.SD, max),
+    by = c("latitude", "longitude"),
+    .SDcols = c("elev_diff", "tmin_diff", "tmean_diff", "tmax_diff")
+  ]
+
+# For each location, get the 95% percentile of the discrepancy between observations
+percentiles <-
+  diffs[
+    ,
+    lapply(.SD, quantile, probs = 0.95),
+    by = c("latitude", "longitude"),
+    .SDcols = c("elev_diff", "tmin_diff", "tmean_diff", "tmax_diff")
+  ]
+
+# Map the max discrepancies
+pts <- SpatialPointsDataFrame(
+  coords = max_diffs[, c("longitude", "latitude"), with = FALSE],
+  data = max_diffs,
+  proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs")
+)
+mapview(pts)
+
+splits <- split(diffs, diffs[, paste(round(latitude, 5), round(longitude, 5), sep = "-")])
+hists <- lapply(splits, function(splt) {
+  list(
+    "tmin_diff" = splt[, tmin_diff] %>% hist(plot = FALSE),
+    "tmax_diff" = splt[, tmax_diff] %>% hist(plot = FALSE)
+  )
+})
+
+
+## 2. Outliers (compared to mean for year + month) ----------------------------
 
 # Get normal temperatures for each month and year
 normals <-
@@ -384,12 +457,12 @@ normals <-
     "normal.median" = median,
     "normal.iqr" = iqr
   ) %>%
-  select(year, month, variable, normal.median, normal.iqr)
+  dplyr::select(year, month, variable, normal.median, normal.iqr)
 
 # Calculate how many IQRs each observation is from the normal
 obs_dists <-
   obs %>%
-  select(explore_cols) %>%
+  dplyr::select(explore_cols) %>%
   gather(variable, value, var_names) %>%
   left_join(normals, by = c("year", "month", "variable")) %>%
   filter(!is.na(value)) %>%
@@ -417,8 +490,8 @@ epsg_4326 <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 epsg_3035 <- CRS("+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs")
 outlier_pts <-
   SpatialPointsDataFrame(
-    coords = select(outliers, longitude, latitude),
-    data = select(outliers, insee_id, elevation, date, variable, dist),
+    coords = dplyr::select(outliers, longitude, latitude),
+    data = dplyr::select(outliers, insee_id, station_elevation, date, variable, dist),
     proj4string = epsg_4326
   ) %>% spTransform(epsg_3035)
 
@@ -431,22 +504,11 @@ buffers <-
 # for (i in 1:1) {
 #   buf <- buffers[i, ]
 #   pts <- outlier_pts[outlier_pts$date == buf$date & outlier_pts$variable == buf$variable, ]
-#   map <- 
+#   map <-
 #     pts[!is.na(over(pts, buf)$insee_id), ] %>%
 #     mapview(zcol = "dist", at = c(-10, -3, -2, 0, 2, 3, 10), legend = TRUE)
 #   print(map)
 # }
 # rm(buf, map, pts, i)
-
-# Cleanup
-rm(buffers, obs_dists, outliers, outlier_pts, epsg_3035, epsg_4326)
-
-
-# Cleanup ---------------------------------------------------------------------
-
-rm(obs, obs_dists, outliers, smry_by_date, smry_by_doy, smry_by_month, smry_by_station,
-   smry_by_stype, smry_by_year_month, smry_by_year_month_obs_per_station, smry_by_year_month_stype,
-   smry_by_year_station, smry_by_year_stype, station_dists, explore_cols, ncores, var_names,
-   vis_dir, group_and_summarize)
 
 report("Done")
